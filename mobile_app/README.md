@@ -2,7 +2,6 @@
 
 A flutter project.
 
-
 ## Features planned:
 - Daily graph, average
 - Notifications if thresholds have been reached.
