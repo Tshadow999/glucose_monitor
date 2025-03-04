@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_app/navigationbar_widget.dart';
 
 void main() {
   runApp(const MyApp());
@@ -10,32 +11,23 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Continuous Glucose Monitoring App',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.dark,
+        ),
       ),
-      home: const HomePage(title: 'Continuous Glucose Monitoring'),
-    );
-  }
-}
-
-class HomePage extends StatelessWidget {
-  const HomePage({super.key, required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-
-      appBar: AppBar(
-        centerTitle: true,
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        title: Text(title),
-      ),
-      body: Center(
-        child: TextButton(onPressed: () {}, child: const Text('Next')),
+      home: Scaffold(
+        appBar: AppBar(
+          centerTitle: true,
+          title: Text("Continuous Glucose Monitoring"),
+        ),
+        body: Center(
+          child: TextButton(onPressed: () {}, child: const Text('Next')),
+        ),
+        bottomNavigationBar: NavigationbarWidget(),
       ),
     );
   }
