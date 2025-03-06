@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_app/navigationbar_widget.dart';
+import 'package:mobile_app/views/widget_tree.dart';
+import 'package:mobile_app/data/notifiers.dart';
 
 void main() {
   runApp(const MyApp());
@@ -10,25 +11,21 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Continuous Glucose Monitoring App',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.dark,
-        ),
-      ),
-      home: Scaffold(
-        appBar: AppBar(
-          centerTitle: true,
-          title: Text("Continuous Glucose Monitoring"),
-        ),
-        body: Center(
-          child: TextButton(onPressed: () {}, child: const Text('Next')),
-        ),
-        bottomNavigationBar: NavigationbarWidget(),
-      ),
+    return ValueListenableBuilder(
+      valueListenable: darkModeNotifier,
+      builder: (context, isDarkMode, child) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Continuous Glucose Monitoring App',
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.deepPurple,
+              brightness: isDarkMode ? Brightness.dark : Brightness.light,
+            ),
+          ),
+          home: WidgetTree(),
+        );
+      },
     );
   }
 }
