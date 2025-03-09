@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_app/data/constants.dart';
 import 'package:mobile_app/views/widgets/navigationbar_widget.dart';
 import 'package:mobile_app/views/pages/home_page.dart';
 import 'package:mobile_app/views/pages/settings_page.dart';
 import 'package:mobile_app/data/notifiers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 List<Widget> pages = [HomePage(), SettingsPage()];
 
@@ -17,8 +19,15 @@ class WidgetTree extends StatelessWidget {
         title: Text("Continuous Glucose Monitoring"),
         actions: [
           IconButton(
-            onPressed: () {
+            onPressed: () async {
               darkModeNotifier.value = !darkModeNotifier.value;
+
+              final SharedPreferences prefs =
+                  await SharedPreferences.getInstance();
+              await prefs.setBool(
+                CustomConstants.themeModePrefKey,
+                darkModeNotifier.value,
+              );
             },
             icon: ValueListenableBuilder(
               valueListenable: darkModeNotifier,

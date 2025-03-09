@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+class CustomConstants {
+  static const String themeModePrefKey = "themeMode";
+}
+
 class CustomTextStyles {
   static const TextStyle cardTitle = TextStyle(
     fontSize: 24.0,

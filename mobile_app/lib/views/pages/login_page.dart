@@ -26,40 +26,60 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          spacing: 16.0,
-          children: [
-            HeroWidget(),
-            Spacer(),
-            TextField(
-              controller: emailController,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(32.0),
+      resizeToAvoidBottomInset: true,
+      body: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            spacing: 16.0,
+            children: [
+              HeroWidget(),
+              const SizedBox(height: 32),
+              TextField(
+                controller: emailController,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(32.0),
+                  ),
+                  labelText: "email",
                 ),
-                labelText: "email",
+                onEditingComplete: () => setState(() {}),
               ),
-              onEditingComplete: () => setState(() {}),
-            ),
-            TextField(
-              controller: passwordController,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(32.0),
+              TextField(
+                controller: passwordController,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(32.0),
+                  ),
+                  labelText: "password",
                 ),
-                labelText: "password",
+                obscureText: true,
+                onEditingComplete: () => setState(() {}),
               ),
-              obscureText: true,
-              onEditingComplete: () => setState(() {}),
-            ),
-            Spacer(),
-            FilledButton(
-              onPressed: () {
-                if (confirmedEmail == emailController.text &&
-                    confirmedPassword == passwordController.text) {
+              const SizedBox(height: 32),
+              FilledButton(
+                onPressed: () {
+                  if (confirmedEmail == emailController.text &&
+                      confirmedPassword == passwordController.text) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) {
+                          return WidgetTree();
+                        },
+                      ),
+                    );
+                  }
+                },
+                style: FilledButton.styleFrom(
+                  minimumSize: Size(double.infinity, 48),
+                ),
+                child: Text("Login", style: TextStyle(fontSize: 24)),
+              ),
+              TextButton(
+                onPressed: () {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
@@ -68,30 +88,14 @@ class _LoginPageState extends State<LoginPage> {
                       },
                     ),
                   );
-                }
-              },
-              style: FilledButton.styleFrom(
-                minimumSize: Size(double.infinity, 48),
+                },
+                style: FilledButton.styleFrom(
+                  minimumSize: Size(double.infinity, 48),
+                ),
+                child: Text("Get Started", style: TextStyle(fontSize: 24)),
               ),
-              child: Text("Login", style: TextStyle(fontSize: 24)),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) {
-                      return WidgetTree();
-                    },
-                  ),
-                );
-              },
-              style: FilledButton.styleFrom(
-                minimumSize: Size(double.infinity, 48),
-              ),
-              child: Text("Get Started", style: TextStyle(fontSize: 24)),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
