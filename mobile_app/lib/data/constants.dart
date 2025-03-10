@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 
 class CustomConstants {
   static const String themeModePrefKey = "themeMode";
+
+  static const String glucoseUnitPrefKey = "glucoseUnit";
+
+  static const String unitMmol = "mmol/L";
+  static const String unitMg = "mg/dL";
 }
 
 class CustomTextStyles {

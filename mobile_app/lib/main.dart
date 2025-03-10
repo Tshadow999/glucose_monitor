@@ -19,14 +19,16 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-
-    initThemeMode();
+    initPreferences();
   }
 
-  Future<void> initThemeMode() async {
+  Future<void> initPreferences() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final bool? themeMode = prefs.getBool(CustomConstants.themeModePrefKey);
     darkModeNotifier.value = themeMode ?? false;
+
+    final bool? glucoseUnit = prefs.getBool(CustomConstants.glucoseUnitPrefKey);
+    glucoseUnitNotifier.value = glucoseUnit ?? true;
   }
 
   @override
