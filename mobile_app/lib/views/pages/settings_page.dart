@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_app/data/constants.dart';
 import 'package:mobile_app/data/notifiers.dart';
@@ -16,6 +17,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
   double sliderValue = 0.0;
   String selectedUnit = CustomConstants.unitMmol;
+
+  bool isDarkMode = true;
 
   @override
   void initState() {
@@ -39,6 +42,81 @@ class _SettingsPageState extends State<SettingsPage> {
       padding: const EdgeInsets.all(8.0),
       child: Column(
         children: [
+          Divider(),
+          Text("Customization", style: CustomTextStyles.settingsTitle),
+          Divider(),
+          SwitchListTile(
+            title: Text(
+              "Dark Mode",
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            value: isDarkMode,
+            onChanged: (value) async {
+              setState(() {
+                isDarkMode = value;
+                darkModeNotifier.value = value;
+              });
+
+              final SharedPreferences prefs =
+                  await SharedPreferences.getInstance();
+              await prefs.setBool(
+                CustomConstants.themeModePrefKey,
+                darkModeNotifier.value,
+              );
+            },
+          ),
+          SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Glucose Unit",
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                CupertinoSegmentedControl<String>(
+                  selectedColor: Theme.of(context).colorScheme.primary,
+                  borderColor: Theme.of(context).colorScheme.primary,
+                  unselectedColor: Theme.of(context).colorScheme.surface,
+                  groupValue: selectedUnit,
+                  children: {
+                    CustomConstants.unitMmol: Padding(
+                      padding: EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 16,
+                      ),
+                      child: Text(CustomConstants.unitMmol),
+                    ),
+                    CustomConstants.unitMg: Padding(
+                      padding: EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 16,
+                      ),
+                      child: Text(CustomConstants.unitMg),
+                    ),
+                  },
+                  onValueChanged: (value) async {
+                    final SharedPreferences prefs =
+                        await SharedPreferences.getInstance();
+                    await prefs.setBool(
+                      CustomConstants.glucoseUnitPrefKey,
+                      value == CustomConstants.unitMg,
+                    );
+                    setState(() {
+                      selectedUnit = value;
+                      glucoseUnitNotifier.value =
+                          value == CustomConstants.unitMg;
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+          // TODO custom theme color
+          Divider(),
+          Text("Profile", style: CustomTextStyles.settingsTitle),
+          Divider(),
           ListTile(
             title: Text("Logout"),
             onTap: () {
@@ -53,45 +131,33 @@ class _SettingsPageState extends State<SettingsPage> {
               );
             },
           ),
-          Divider(),
-          RadioListTile<String>(
-            title: Text(CustomConstants.unitMmol),
-            value: CustomConstants.unitMmol,
-
-            groupValue: selectedUnit,
-            onChanged: (value) async {
-              glucoseUnitNotifier.value = value == CustomConstants.unitMg;
-
-              final SharedPreferences prefs =
-                  await SharedPreferences.getInstance();
-              await prefs.setBool(
-                CustomConstants.glucoseUnitPrefKey,
-                glucoseUnitNotifier.value,
-              );
-              setState(() {
-                selectedUnit = value!;
-              });
-            },
+          ListTile(
+            title: Text(
+              "Delete Account",
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+            onTap:
+                () => showDialog(
+                  context: context,
+                  builder:
+                      (BuildContext context) => AlertDialog(
+                        title: const Text(
+                          "Are you sure you want to delete your account?",
+                        ),
+                        content: const Text("This action cannot be undone"),
+                        actions: <Widget>[
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text("Cancel"),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text("Delete account"),
+                          ),
+                        ],
+                      ),
+                ),
           ),
-          RadioListTile<String>(
-            title: Text(CustomConstants.unitMg),
-            value: CustomConstants.unitMg,
-            groupValue: selectedUnit,
-            onChanged: (value) async {
-              glucoseUnitNotifier.value = value == CustomConstants.unitMg;
-
-              final SharedPreferences prefs =
-                  await SharedPreferences.getInstance();
-              await prefs.setBool(
-                CustomConstants.glucoseUnitPrefKey,
-                glucoseUnitNotifier.value,
-              );
-              setState(() {
-                selectedUnit = value!;
-              });
-            },
-          ),
-          Divider(),
         ],
       ),
     );

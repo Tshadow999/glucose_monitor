@@ -17,5 +17,11 @@ class CustomTextStyles {
     letterSpacing: 2.0,
   );
 
+  static const TextStyle settingsTitle = TextStyle(
+    fontSize: 32.0,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 3,
+  );
+
   static const TextStyle cardDescription = TextStyle(fontSize: 16.0);
 }
