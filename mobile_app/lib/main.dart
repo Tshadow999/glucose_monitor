@@ -18,8 +18,8 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   @override
   void initState() {
-    super.initState();
     initPreferences();
+    super.initState();
   }
 
   Future<void> initPreferences() async {
@@ -41,7 +41,7 @@ class _MyAppState extends State<MyApp> {
           title: 'Continuous Glucose Monitoring App',
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.deepPurple,
+              seedColor: Colors.blue,
               brightness: isDarkMode ? Brightness.dark : Brightness.light,
             ),
           ),

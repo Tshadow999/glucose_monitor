@@ -13,8 +13,6 @@ class DailyGlucoseChart extends StatefulWidget {
 }
 
 class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
-  List<Color> gradientColors = [Colors.deepPurple, Colors.deepPurpleAccent];
-
   bool showAvg = false;
   List<FlSpot> glucoseLevels = [];
 
@@ -47,7 +45,10 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Text("Glucose $glucoseUnit", style: CustomTextStyles.cardTitle),
+              Text(
+                "Glucose $glucoseUnit",
+                style: CustomTextStyles.cardTitle(context),
+              ),
               SizedBox(height: 500, child: LineChart(mainData())),
             ],
           ),
@@ -146,14 +147,23 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
         LineChartBarData(
           spots: glucoseLevels,
           isCurved: true,
-          gradient: LinearGradient(colors: gradientColors),
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).colorScheme.primary,
+              Theme.of(context).colorScheme.primary,
+            ],
+          ),
           barWidth: 5,
           isStrokeCapRound: true,
           dotData: const FlDotData(show: true),
           belowBarData: BarAreaData(
             show: true,
             gradient: LinearGradient(
-              colors: gradientColors.map((c) => c.withAlpha(60)).toList(),
+              colors:
+                  ([
+                    Theme.of(context).colorScheme.onPrimary,
+                    Theme.of(context).colorScheme.onPrimary,
+                  ]).map((c) => c.withAlpha(60)).toList(),
             ),
           ),
         ),

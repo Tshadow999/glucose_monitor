@@ -33,6 +33,7 @@ class _SettingsPageState extends State<SettingsPage> {
         prefs.getBool(CustomConstants.glucoseUnitPrefKey) ?? false;
     setState(() {
       selectedUnit = unit ? CustomConstants.unitMg : CustomConstants.unitMmol;
+      isDarkMode = prefs.getBool(CustomConstants.themeModePrefKey) ?? false;
     });
   }
 
@@ -113,7 +114,6 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
           ),
-          // TODO custom theme color
           Divider(),
           Text("Profile", style: CustomTextStyles.settingsTitle),
           Divider(),

@@ -10,12 +10,19 @@ class CustomConstants {
 }
 
 class CustomTextStyles {
-  static const TextStyle cardTitle = TextStyle(
-    fontSize: 24.0,
-    fontWeight: FontWeight.w600,
-    color: Colors.deepPurple,
-    letterSpacing: 2.0,
-  );
+  CustomTextStyles(BuildContext context) {
+    context = context;
+  }
+
+  static BuildContext? context;
+  static TextStyle cardTitle(BuildContext context) {
+    return TextStyle(
+      fontSize: 24.0,
+      fontWeight: FontWeight.w600,
+      color: Theme.of(context).colorScheme.primary,
+      letterSpacing: 2.0,
+    );
+  }
 
   static const TextStyle settingsTitle = TextStyle(
     fontSize: 32.0,
