@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:mobile_app/data/constants.dart';
+import 'package:mobile_app/data/notification_service.dart';
 import 'package:mobile_app/data/notifiers.dart';
 
 class DailyGlucoseChart extends StatefulWidget {
@@ -39,20 +40,42 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(vertical: 20.0),
-      child: Card(
-        child: Padding(
-          padding: EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Text(
-                "Glucose $glucoseUnit",
-                style: CustomTextStyles.cardTitle(context),
+      child: Column(
+        children: [
+          Card(
+            child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    "Glucose $glucoseUnit",
+                    style: CustomTextStyles.cardTitle(context),
+                  ),
+                  SizedBox(height: 500, child: LineChart(mainData())),
+                ],
               ),
-              SizedBox(height: 500, child: LineChart(mainData())),
-            ],
+            ),
           ),
-        ),
+          TextButton(
+            onPressed: () {
+              NotificationService().cancelAll();
+              NotificationService().show(
+                title: "Warning",
+                body:
+                    "Your glucose level is above the threshold.\nConsider taking action!",
+              );
+
+              NotificationService().schedule(
+                title: "Scheduled notification",
+                body: "This took some time to get there",
+                hour: 16,
+                minute: 18,
+              );
+            },
+            child: Text("Notification test"),
+          ),
+        ],
       ),
     );
   }

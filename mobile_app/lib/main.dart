@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_app/data/constants.dart';
+import 'package:mobile_app/data/notification_service.dart';
 import 'package:mobile_app/views/pages/login_page.dart';
 import 'package:mobile_app/data/notifiers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await NotificationService().init();
+
   runApp(const MyApp());
 }
 

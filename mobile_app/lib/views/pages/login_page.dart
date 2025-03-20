@@ -15,8 +15,15 @@ class _LoginPageState extends State<LoginPage> {
   TextEditingController passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  String confirmedEmail = "test@example.com";
+  String confirmedEmail = "test@email.com";
   String confirmedPassword = "pass";
+
+  @override
+  void initState() {
+    super.initState();
+    emailController.text = confirmedEmail;
+    passwordController.text = confirmedPassword;
+  }
 
   @override
   void dispose() {

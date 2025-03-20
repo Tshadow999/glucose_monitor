@@ -50,6 +50,7 @@ class _SignupPageState extends State<SignupPage> {
       // Navigate to the main app after successful signup
       // Adding a delay to show the snackbar before navigation
       Future.delayed(const Duration(seconds: 2), () {
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => WidgetTree()),
