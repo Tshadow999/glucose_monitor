@@ -93,6 +93,9 @@ class NotificationService {
       minute,
     );
 
+    // Dont allow for messages in the past
+    if (scheduledTime.isBefore(now)) return;
+
     await notificationPlugin.zonedSchedule(
       id,
       title,
