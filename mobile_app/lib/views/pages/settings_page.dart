@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:mobile_app/data/constants.dart';
-import 'package:mobile_app/data/notifiers.dart';
-import 'package:mobile_app/views/pages/login_page.dart';
+import 'package:GlucoMonitor/data/constants.dart';
+import 'package:GlucoMonitor/data/notifiers.dart';
+import 'package:GlucoMonitor/views/pages/login_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsPage extends StatefulWidget {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_app/views/widgets/navigationbar_widget.dart';
-import 'package:mobile_app/views/pages/home_page.dart';
-import 'package:mobile_app/views/pages/settings_page.dart';
-import 'package:mobile_app/data/notifiers.dart';
+import 'package:GlucoMonitor/views/widgets/navigationbar_widget.dart';
+import 'package:GlucoMonitor/views/pages/home_page.dart';
+import 'package:GlucoMonitor/views/pages/settings_page.dart';
+import 'package:GlucoMonitor/data/notifiers.dart';
 
 List<Widget> pages = [HomePage(), SettingsPage()];
 List<String> pageTitles = ["Home", "Settings"];

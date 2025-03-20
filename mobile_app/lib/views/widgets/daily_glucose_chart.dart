@@ -2,9 +2,9 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
-import 'package:mobile_app/data/constants.dart';
-import 'package:mobile_app/data/notification_service.dart';
-import 'package:mobile_app/data/notifiers.dart';
+import 'package:GlucoMonitor/data/constants.dart';
+import 'package:GlucoMonitor/data/notification_service.dart';
+import 'package:GlucoMonitor/data/notifiers.dart';
 
 class DailyGlucoseChart extends StatefulWidget {
   const DailyGlucoseChart({super.key});
@@ -70,7 +70,7 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
                 title: "Scheduled notification",
                 body: "This took some time to get there",
                 hour: 16,
-                minute: 18,
+                minute: 24,
               );
             },
             child: Text("Notification test"),

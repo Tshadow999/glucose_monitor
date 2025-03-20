@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_app/views/widget_tree.dart';
-import 'package:mobile_app/views/widgets/hero_widget.dart';
+import 'package:GlucoMonitor/views/widget_tree.dart';
+import 'package:GlucoMonitor/views/widgets/hero_widget.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
