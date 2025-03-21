@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:GlucoMonitor/data/notification_service.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
@@ -18,7 +19,7 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
   bool showAvg = false;
   List<FlSpot> glucoseLevels = [];
 
-  Timer? _timer;
+  Timer? timer;
 
   double get unitMultiplier => glucoseUnitNotifier.value ? 18 : 1;
 
@@ -33,10 +34,10 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
   @override
   void initState() {
     super.initState();
-    _generateDummyData();
-    _timer = Timer.periodic(const Duration(minutes: 5), (timer) {
+    generateDummyData();
+    timer = Timer.periodic(const Duration(minutes: 5), (timer) {
       if (!mounted) return;
-      _addNewGlucoseReading();
+      addNewGlucoseReading();
     });
   }
 
@@ -71,11 +72,11 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
 
   @override
   void dispose() {
-    _timer?.cancel();
+    timer?.cancel();
     super.dispose();
   }
 
-  void _generateDummyData() {
+  void generateDummyData() {
     DateTime now = DateTime.now();
     setState(() {
       glucoseLevels = List.generate(15, (index) {
@@ -99,14 +100,45 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
     });
   }
 
-  void _addNewGlucoseReading() {
+  void addNewGlucoseReading() {
     DateTime now = DateTime.now();
     setState(() {
-      glucoseLevels.add(FlSpot(now.millisecondsSinceEpoch.toDouble(), 4));
+      int lastIndex = glucoseLevels.length;
+      double baseLevel = 5.5 * unitMultiplier;
+
+      double sineValue =
+          baseLevel + (2.0 * unitMultiplier * sin(lastIndex * 0.5));
+
+      sineValue += (0.1 * unitMultiplier * (Random().nextDouble() - 0.5));
+
+      checkThresholdAndNotify(sineValue);
+
+      glucoseLevels.add(
+        FlSpot(now.millisecondsSinceEpoch.toDouble(), sineValue),
+      );
+
       if (glucoseLevels.length > 10) {
         glucoseLevels.removeAt(0);
       }
     });
+  }
+
+  void checkThresholdAndNotify(double glucoseValue) {
+    if (glucoseValue < lowThreshold) {
+      NotificationService().show(
+        id: 1,
+        title: "Low Glucose Alert",
+        body:
+            "Your glucose level is ${glucoseValue.toStringAsFixed(1)} $glucoseUnitLabel. Take action!",
+      );
+    } else if (glucoseValue > highThreshold) {
+      NotificationService().show(
+        id: 2,
+        title: "High Glucose Alert",
+        body:
+            "Your glucose level is ${glucoseValue.toStringAsFixed(1)} $glucoseUnitLabel. Take action!",
+      );
+    }
   }
 
   Widget bottomTitleWidgets(double value, TitleMeta meta) {
@@ -165,6 +197,46 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
       maxX: maxX,
       minY: 2 * unitMultiplier,
       maxY: 8 * unitMultiplier,
+      extraLinesData: ExtraLinesData(
+        horizontalLines: [
+          HorizontalLine(
+            y: lowThreshold,
+            color: Colors.red.withAlpha(200),
+            strokeWidth: 2,
+            dashArray: [5, 5],
+            label: HorizontalLineLabel(
+              show: true,
+              alignment: Alignment.topRight,
+              padding: const EdgeInsets.only(right: 8, top: 2),
+              style: TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+              labelResolver:
+                  (line) => 'Low: ${lowThreshold.toStringAsFixed(1)}',
+            ),
+          ),
+          HorizontalLine(
+            y: highThreshold,
+            color: Colors.orange.withAlpha(200),
+            strokeWidth: 2,
+            dashArray: [5, 5],
+            label: HorizontalLineLabel(
+              show: true,
+              alignment: Alignment.topRight,
+              padding: const EdgeInsets.only(right: 8, top: 2),
+              style: TextStyle(
+                color: Colors.orange,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+              labelResolver:
+                  (line) => 'High: ${highThreshold.toStringAsFixed(1)}',
+            ),
+          ),
+        ],
+      ),
       lineBarsData: [
         LineChartBarData(
           spots: glucoseLevels,
