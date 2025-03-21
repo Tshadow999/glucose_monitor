@@ -1,9 +1,10 @@
+import 'dart:math';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:GlucoMonitor/data/constants.dart';
-import 'package:GlucoMonitor/data/notification_service.dart';
 import 'package:GlucoMonitor/data/notifiers.dart';
 
 class DailyGlucoseChart extends StatefulWidget {
@@ -18,7 +19,16 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
   List<FlSpot> glucoseLevels = [];
 
   Timer? _timer;
-  String glucoseUnit = CustomConstants.unitMg;
+
+  double get unitMultiplier => glucoseUnitNotifier.value ? 18 : 1;
+
+  String get glucoseUnitLabel =>
+      glucoseUnitNotifier.value
+          ? CustomConstants.unitMg
+          : CustomConstants.unitMmol;
+
+  double get lowThreshold => 3.9 * unitMultiplier;
+  double get highThreshold => 7.0 * unitMultiplier;
 
   @override
   void initState() {
@@ -28,11 +38,6 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
       if (!mounted) return;
       _addNewGlucoseReading();
     });
-
-    glucoseUnit =
-        glucoseUnitNotifier.value
-            ? CustomConstants.unitMg
-            : CustomConstants.unitMmol;
   }
 
   @override
@@ -49,7 +54,7 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Text(
-                    "Glucose $glucoseUnit",
+                    "Glucose $glucoseUnitLabel",
                     style: CustomTextStyles.cardTitle(context),
                   ),
                   SizedBox(height: 500, child: LineChart(mainData())),
@@ -57,24 +62,8 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
               ),
             ),
           ),
-          TextButton(
-            onPressed: () {
-              NotificationService().cancelAll();
-              NotificationService().show(
-                title: "Warning",
-                body:
-                    "Your glucose level is above the threshold.\nConsider taking action!",
-              );
-
-              NotificationService().schedule(
-                title: "Scheduled notification",
-                body: "This took some time to get there",
-                hour: 16,
-                minute: 24,
-              );
-            },
-            child: Text("Notification test"),
-          ),
+          const SizedBox(height: 10),
+          averageGlucoseCard(context),
         ],
       ),
     );
@@ -89,13 +78,23 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
   void _generateDummyData() {
     DateTime now = DateTime.now();
     setState(() {
-      glucoseLevels = List.generate(10, (index) {
-        DateTime time = now.subtract(Duration(minutes: (10 - index) * 15));
-        return FlSpot(
-          time.millisecondsSinceEpoch.toDouble(),
-          (4 * (glucoseUnitNotifier.value ? 18 : 1) +
-              (index % 2 == 0 ? 0.5 : -0.5)),
-        );
+      glucoseLevels = List.generate(15, (index) {
+        // Create time points 15 minutes apart
+        DateTime time = now.subtract(Duration(minutes: (15 - index) * 15));
+
+        // Base glucose level (mmol/L or mg/dL depending on your unit system)
+        double baseLevel =
+            5.5 * unitMultiplier; // Assuming 5.5 mmol/L as baseline
+
+        // Create a realistic sine wave with some variation
+        // Using multiple sine waves of different frequencies for more natural variation
+        double sineValue =
+            baseLevel + (2.0 * unitMultiplier * sin(index * 0.5));
+
+        // Add some minor random noise for realism
+        sineValue += (0.1 * unitMultiplier * (Random().nextDouble() - 0.5));
+
+        return FlSpot(time.millisecondsSinceEpoch.toDouble(), sineValue);
       });
     });
   }
@@ -151,7 +150,7 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
             minIncluded: false,
             maxIncluded: false,
             reservedSize: 50,
-            interval: 0.5 * (glucoseUnitNotifier.value ? 20 : 1),
+            interval: 0.5 * unitMultiplier,
             getTitlesWidget: (value, meta) {
               return SideTitleWidget(meta: meta, child: Text("$value"));
             },
@@ -164,8 +163,8 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
       borderData: FlBorderData(show: true),
       minX: minX,
       maxX: maxX,
-      minY: 2 * (glucoseUnitNotifier.value ? 18 : 1),
-      maxY: 8 * (glucoseUnitNotifier.value ? 18 : 1),
+      minY: 2 * unitMultiplier,
+      maxY: 8 * unitMultiplier,
       lineBarsData: [
         LineChartBarData(
           spots: glucoseLevels,
@@ -178,7 +177,25 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
           ),
           barWidth: 5,
           isStrokeCapRound: true,
-          dotData: const FlDotData(show: true),
+          dotData: FlDotData(
+            show: true,
+            getDotPainter: (
+              FlSpot spot,
+              double percent,
+              LineChartBarData bardata,
+              int index,
+            ) {
+              // Normal range color
+              Color dotColor = getColorForValue(spot.y);
+
+              return FlDotCirclePainter(
+                radius: 6,
+                color: dotColor,
+                strokeWidth: 2,
+                strokeColor: Colors.white, // Adds contrast
+              );
+            },
+          ),
           belowBarData: BarAreaData(
             show: true,
             gradient: LinearGradient(
@@ -192,5 +209,46 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
         ),
       ],
     );
+  }
+
+  Color getColorForValue(double value) {
+    if (value < lowThreshold) return Colors.red; // Too low
+    if (value > highThreshold) return Colors.orangeAccent; // Too high
+    return Colors.green; // Normal
+  }
+
+  Widget averageGlucoseCard(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.show_chart,
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+            size: 24,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            "Average: ${averageGlucoseLevel.toStringAsFixed(2)} $glucoseUnitLabel",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  double get averageGlucoseLevel {
+    if (glucoseLevels.isEmpty) return 0;
+    double sum = glucoseLevels.map((spot) => spot.y).reduce((a, b) => a + b);
+    return sum / glucoseLevels.length;
   }
 }

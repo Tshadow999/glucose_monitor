@@ -19,6 +19,7 @@ class _WidgetTreeState extends State<WidgetTree> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        /*
         centerTitle: true,
         title: ValueListenableBuilder(
           valueListenable: selectedPageNotifier,
@@ -26,6 +27,7 @@ class _WidgetTreeState extends State<WidgetTree> {
             return Text(pageTitles.elementAt(selectedPage).toString());
           },
         ),
+        */
       ),
       body: ValueListenableBuilder(
         valueListenable: selectedPageNotifier,
