@@ -1,3 +1,4 @@
+import 'package:GlucoMonitor/data/auth_service.dart';
 import 'package:flutter/material.dart';
 
 ValueNotifier<int> selectedPageNotifier = ValueNotifier(0);
@@ -7,3 +8,6 @@ ValueNotifier<bool> darkModeNotifier = ValueNotifier(true);
 ///
 /// glucoseUnitNotifier.value ? CustomConstants.unitMg : CustomConstants.unitMmol
 ValueNotifier<bool> glucoseUnitNotifier = ValueNotifier(true);
+
+//
+ValueNotifier<AuthService> authService = ValueNotifier(AuthService());

@@ -1,3 +1,5 @@
+import 'package:GlucoMonitor/data/notifiers.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:GlucoMonitor/views/widget_tree.dart';
 import 'package:GlucoMonitor/views/widgets/hero_widget.dart';
@@ -36,16 +38,21 @@ class _SignupPageState extends State<SignupPage> {
     return password.length >= 8;
   }
 
-  void validateAndSignup() {
+  void validateAndSignup() async {
     if (_formKey.currentState!.validate()) {
       FocusManager.instance.primaryFocus?.unfocus();
 
-      // In a real app, you would call your authentication service here
-      // For this example, we'll just show a success message and navigate
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Account created successfully!")),
-      );
+      try {
+        await authService.value.createAccount(
+          email: emailController.text,
+          password: passwordController.text,
+        );
+      } on FirebaseAuthException catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? "An error occured")),
+        );
+      }
 
       // Navigate to the main app after successful signup
       // Adding a delay to show the snackbar before navigation

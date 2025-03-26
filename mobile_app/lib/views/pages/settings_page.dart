@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:GlucoMonitor/data/constants.dart';
@@ -120,15 +121,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ListTile(
             title: Text("Logout"),
             onTap: () {
-              selectedPageNotifier.value = 0;
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) {
-                    return LoginPage();
-                  },
-                ),
-              );
+              logout(context);
             },
           ),
           ListTile(
@@ -151,7 +144,9 @@ class _SettingsPageState extends State<SettingsPage> {
                             child: const Text("Cancel"),
                           ),
                           TextButton(
-                            onPressed: () => Navigator.pop(context),
+                            onPressed: () {
+                              deleteAccount(context);
+                            },
                             child: const Text("Delete account"),
                           ),
                         ],
@@ -161,5 +156,50 @@ class _SettingsPageState extends State<SettingsPage> {
         ],
       ),
     );
+  }
+
+  // TODO: no more hard coded deleting
+  void deleteAccount(BuildContext context) async {
+    try {
+      await authService.value.deleteAccount(
+        email: "test@email.com",
+        password: "pass123456",
+      );
+    } on FirebaseAuthException catch (e) {
+      print(e.message);
+    }
+    if (!mounted) return;
+
+    selectedPageNotifier.value = 0;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) {
+          return LoginPage();
+        },
+      ),
+    );
+  }
+
+  void logout(BuildContext context) async {
+    try {
+      await authService.value.signOut();
+
+      if (!mounted) return;
+
+      selectedPageNotifier.value = 0;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) {
+            return LoginPage();
+          },
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      print(e.message);
+    }
   }
 }

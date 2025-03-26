@@ -1,6 +1,8 @@
+import 'package:GlucoMonitor/data/notifiers.dart';
+import 'package:GlucoMonitor/views/widget_tree.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:GlucoMonitor/views/pages/signup_page.dart';
-import 'package:GlucoMonitor/views/widget_tree.dart';
 import 'package:GlucoMonitor/views/widgets/hero_widget.dart';
 
 class LoginPage extends StatefulWidget {
@@ -15,14 +17,9 @@ class _LoginPageState extends State<LoginPage> {
   TextEditingController passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  String confirmedEmail = "test@email.com";
-  String confirmedPassword = "pass";
-
   @override
   void initState() {
     super.initState();
-    emailController.text = confirmedEmail;
-    passwordController.text = confirmedPassword;
   }
 
   @override
@@ -37,20 +34,24 @@ class _LoginPageState extends State<LoginPage> {
     return emailRegex.hasMatch(email);
   }
 
-  void validateAndLogin() {
+  void validateAndLogin() async {
     if (_formKey.currentState!.validate()) {
       // Use this safer method to unfocus
       FocusManager.instance.primaryFocus?.unfocus();
 
-      if (confirmedEmail == emailController.text &&
-          confirmedPassword == passwordController.text) {
+      try {
+        await authService.value.signIn(
+          email: emailController.text,
+          password: passwordController.text,
+        );
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => WidgetTree()),
         );
-      } else {
+      } on FirebaseAuthException catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Invalid email or password")),
+          SnackBar(content: Text(e.message ?? "An unknown error occurred")),
         );
       }
     }
