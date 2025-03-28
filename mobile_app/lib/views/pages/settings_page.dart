@@ -129,57 +129,95 @@ class _SettingsPageState extends State<SettingsPage> {
               "Delete Account",
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
-            onTap:
-                () => showDialog(
-                  context: context,
-                  builder:
-                      (BuildContext context) => AlertDialog(
-                        title: const Text(
-                          "Are you sure you want to delete your account?",
-                        ),
-                        content: const Text("This action cannot be undone"),
-                        actions: <Widget>[
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text("Cancel"),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              deleteAccount(context);
-                            },
-                            child: const Text("Delete account"),
-                          ),
-                        ],
-                      ),
-                ),
+            onTap: () => deleteAccount(context),
           ),
         ],
       ),
     );
   }
 
-  // TODO: no more hard coded deleting
   void deleteAccount(BuildContext context) async {
+    TextEditingController passwordController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text("Confirm Account Deletion"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("Enter your password to delete your account."),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: "Password",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () async {
+                await confirmDelete(
+                  context,
+                  dialogContext,
+                  passwordController.text,
+                );
+              },
+              child: const Text("Delete", style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> confirmDelete(
+    BuildContext context,
+    BuildContext dialogContext,
+    String password,
+  ) async {
     try {
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (password.isEmpty) {
+        throw FirebaseAuthException(
+          code: "no-password",
+          message: "Please enter a valid password",
+        );
+      }
+
+      if (user == null || user.email == null) {
+        throw FirebaseAuthException(
+          code: "user-not-found",
+          message: "User not logged in",
+        );
+      }
       await authService.value.deleteAccount(
-        email: "test@email.com",
-        password: "pass123456",
+        email: user.email!,
+        password: password,
+      );
+
+      Navigator.pop(dialogContext);
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => LoginPage()),
       );
     } on FirebaseAuthException catch (e) {
-      print(e.message);
+      if (!mounted) return;
+      Navigator.pop(dialogContext);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message ?? "An error occured")));
     }
-    if (!mounted) return;
-
-    selectedPageNotifier.value = 0;
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) {
-          return LoginPage();
-        },
-      ),
-    );
   }
 
   void logout(BuildContext context) async {
@@ -199,7 +237,9 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       );
     } on FirebaseAuthException catch (e) {
-      print(e.message);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message ?? "An error occured")));
     }
   }
 }

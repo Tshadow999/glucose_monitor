@@ -20,6 +20,9 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
+
+    emailController.text = "test@email.com";
+    passwordController.text = "Admin12345";
   }
 
   @override
@@ -44,6 +47,8 @@ class _LoginPageState extends State<LoginPage> {
           email: emailController.text,
           password: passwordController.text,
         );
+
+        if (!mounted) return;
 
         Navigator.pushReplacement(
           context,

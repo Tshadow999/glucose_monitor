@@ -47,22 +47,18 @@ class _SignupPageState extends State<SignupPage> {
           email: emailController.text,
           password: passwordController.text,
         );
+
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => WidgetTree()),
+        );
       } on FirebaseAuthException catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.message ?? "An error occured")),
         );
       }
-
-      // Navigate to the main app after successful signup
-      // Adding a delay to show the snackbar before navigation
-      Future.delayed(const Duration(seconds: 2), () {
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => WidgetTree()),
-        );
-      });
     }
   }
 
