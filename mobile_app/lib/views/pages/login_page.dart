@@ -1,4 +1,5 @@
 import 'package:GlucoMonitor/data/notifiers.dart';
+import 'package:GlucoMonitor/views/pages/forgot_pass_page.dart';
 import 'package:GlucoMonitor/views/widget_tree.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -116,6 +117,23 @@ class _LoginPageState extends State<LoginPage> {
                       }
                       return null;
                     },
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ForgotPassPage(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        "Forgot Password?",
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 32),
                   FilledButton(
