@@ -197,6 +197,31 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
       maxX: maxX,
       minY: 2 * unitMultiplier,
       maxY: 8 * unitMultiplier,
+      lineTouchData: LineTouchData(
+        touchTooltipData: LineTouchTooltipData(
+          tooltipPadding: const EdgeInsets.all(8),
+          tooltipRoundedRadius: 8,
+          tooltipBorder: BorderSide(
+            color: Theme.of(context).colorScheme.inversePrimary,
+            width: 3,
+          ),
+          getTooltipColor: (LineBarSpot touchedSpot) {
+            return Theme.of(context).colorScheme.onPrimaryFixed;
+          },
+          getTooltipItems: (List<LineBarSpot> touchedSpots) {
+            return touchedSpots.map((spot) {
+              // decimal places depending on unit.
+              int decimalPlaces = spot.y < 10 ? 2 : 1;
+              String formattedValue = spot.y.toStringAsFixed(decimalPlaces);
+              return LineTooltipItem(
+                formattedValue,
+                CustomTextStyles.chartToolTip,
+              );
+            }).toList();
+          },
+        ),
+        touchCallback: (p0, p1) {},
+      ),
       extraLinesData: ExtraLinesData(
         horizontalLines: [
           HorizontalLine(

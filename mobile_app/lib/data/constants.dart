@@ -30,5 +30,10 @@ class CustomTextStyles {
     letterSpacing: 3,
   );
 
+  static const TextStyle chartToolTip = TextStyle(
+    fontSize: 20.0,
+    fontWeight: FontWeight.w800,
+    color: Colors.white,
+  );
   static const TextStyle cardDescription = TextStyle(fontSize: 16.0);
 }
