@@ -1,4 +1,5 @@
 import 'package:GlucoMonitor/data/notifiers.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:GlucoMonitor/views/widget_tree.dart';
@@ -32,12 +33,6 @@ class _SignupPageState extends State<SignupPage> {
     return emailRegex.hasMatch(email);
   }
 
-  bool isStrongPassword(String password) {
-    // Basic password strength check
-    // You can enhance this based on your requirements
-    return password.length >= 8;
-  }
-
   void validateAndSignup() async {
     if (_formKey.currentState!.validate()) {
       FocusManager.instance.primaryFocus?.unfocus();
@@ -47,6 +42,11 @@ class _SignupPageState extends State<SignupPage> {
           email: emailController.text,
           password: passwordController.text,
         );
+
+        await FirebaseFirestore.instance.collection("user_data").add({
+          "name": nameController.text,
+          "emal": emailController.text,
+        });
 
         if (!mounted) return;
         Navigator.pushReplacement(
@@ -146,8 +146,6 @@ class _SignupPageState extends State<SignupPage> {
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return "Password cannot be empty";
-                      } else if (!isStrongPassword(value)) {
-                        return "Password must be at least 8 characters";
                       }
                       return null;
                     },

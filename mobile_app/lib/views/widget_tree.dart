@@ -1,3 +1,4 @@
+import 'package:GlucoMonitor/data/database_service.dart';
 import 'package:flutter/material.dart';
 import 'package:GlucoMonitor/views/widgets/navigationbar_widget.dart';
 import 'package:GlucoMonitor/views/pages/home_page.dart';
@@ -5,7 +6,6 @@ import 'package:GlucoMonitor/views/pages/settings_page.dart';
 import 'package:GlucoMonitor/data/notifiers.dart';
 
 List<Widget> pages = [HomePage(), SettingsPage()];
-List<String> pageTitles = ["Home", "Settings"];
 
 class WidgetTree extends StatefulWidget {
   const WidgetTree({super.key});
@@ -16,18 +16,28 @@ class WidgetTree extends StatefulWidget {
 
 class _WidgetTreeState extends State<WidgetTree> {
   @override
+  void initState() {
+    super.initState();
+    DatabaseService.updateDocumentIds("user_data");
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        /*
         centerTitle: true,
-        title: ValueListenableBuilder(
-          valueListenable: selectedPageNotifier,
-          builder: (context, selectedPage, child) {
-            return Text(pageTitles.elementAt(selectedPage).toString());
+        title: FutureBuilder(
+          future: DatabaseService.getUserNameByEmail(
+            authService.value.currentUser!.email ?? "",
+          ),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.done) {
+              return Text("Hello ${snapshot.data ?? "User"}");
+            } else {
+              return Text("");
+            }
           },
         ),
-        */
       ),
       body: ValueListenableBuilder(
         valueListenable: selectedPageNotifier,

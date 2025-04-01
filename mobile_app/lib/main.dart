@@ -1,3 +1,4 @@
+import 'package:GlucoMonitor/data/database_service.dart';
 import 'package:flutter/material.dart';
 import 'package:GlucoMonitor/data/constants.dart';
 import 'package:GlucoMonitor/data/notification_service.dart';
@@ -30,6 +31,12 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     initPreferences();
     super.initState();
+
+    getDocID();
+  }
+
+  void getDocID() async {
+    await DatabaseService.updateDocumentIds("user_data");
   }
 
   Future<void> initPreferences() async {
