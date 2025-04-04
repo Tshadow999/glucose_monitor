@@ -10,7 +10,7 @@ class DatabaseService {
         .get()
         .then(
           (snapshot) => snapshot.docs.forEach((document) {
-            print(document.reference.id);
+            // print(document.reference.id);
             docIDs.add(document.reference.id);
           }),
         );
@@ -21,18 +21,18 @@ class DatabaseService {
       "user_data",
     );
 
-    print("Fetching user with email: $email");
+    // print("Fetching user with email: $email");
 
     QuerySnapshot querySnapshot =
         await users.where("email", isEqualTo: email).limit(1).get();
 
     if (querySnapshot.docs.isNotEmpty) {
       var userData = querySnapshot.docs.first.data() as Map<String, dynamic>;
-      print("User found: ${userData["name"]}");
+      // print("User found: ${userData["name"]}");
       return userData["name"] ?? "User";
     }
 
-    print("No user found for email: $email");
+    // print("No user found for email: $email");
     return "User";
   }
 }

@@ -125,6 +125,10 @@ class _SettingsPageState extends State<SettingsPage> {
             },
           ),
           ListTile(
+            title: Text("Update Password"),
+            onTap: () => updatePassword(context),
+          ),
+          ListTile(
             title: Text(
               "Delete Account",
               style: TextStyle(color: Theme.of(context).colorScheme.error),
@@ -133,6 +137,107 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> confirmReset(
+    BuildContext context,
+    String currentPassword,
+    String newPasword,
+  ) async {
+    if (authService.value.currentUser == null ||
+        authService.value.currentUser!.email == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You are not logged in, please login first.')),
+      );
+      return;
+    }
+
+    if (currentPassword.isEmpty || newPasword.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Password fields cannot be empty.")),
+      );
+      return;
+    }
+
+    try {
+      await authService.value.updatePassword(
+        email: authService.value.currentUser!.email!,
+        password: currentPassword,
+        newPassword: newPasword,
+      );
+    } on FirebaseAuthException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message!)));
+      }
+    } catch (e) {
+      rethrow;
+    }
+
+    // All passed, password updated!
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Password has been updated!")));
+    }
+  }
+
+  void updatePassword(BuildContext context) async {
+    TextEditingController passwordController = TextEditingController();
+    TextEditingController newPassController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text("Confirm to update password"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Enter your current password"),
+                TextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: "Password",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const Text("Enter your new password"),
+                TextField(
+                  controller: newPassController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: "Password",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await confirmReset(
+                  context,
+                  passwordController.text,
+                  newPassController.text,
+                );
+              },
+              child: const Text("Update"),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -165,11 +270,8 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             TextButton(
               onPressed: () async {
-                await confirmDelete(
-                  context,
-                  dialogContext,
-                  passwordController.text,
-                );
+                Navigator.pop(dialogContext);
+                await confirmDelete(context, passwordController.text);
               },
               child: const Text("Delete", style: TextStyle(color: Colors.red)),
             ),
@@ -179,11 +281,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Future<void> confirmDelete(
-    BuildContext context,
-    BuildContext dialogContext,
-    String password,
-  ) async {
+  Future<void> confirmDelete(BuildContext context, String password) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
 
@@ -205,18 +303,18 @@ class _SettingsPageState extends State<SettingsPage> {
         password: password,
       );
 
-      Navigator.pop(dialogContext);
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => LoginPage()),
-      );
+      if (context.mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => LoginPage()),
+        );
+      }
     } on FirebaseAuthException catch (e) {
-      if (!mounted) return;
-      Navigator.pop(dialogContext);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message ?? "An error occured")));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? "An error occured")),
+        );
+      }
     }
   }
 
@@ -224,7 +322,7 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       await authService.value.signOut();
 
-      if (!mounted) return;
+      if (!context.mounted) return;
 
       selectedPageNotifier.value = 0;
 
