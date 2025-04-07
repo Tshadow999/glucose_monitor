@@ -30,6 +30,11 @@ class CustomTextStyles {
     letterSpacing: 3,
   );
 
+  static const TextStyle settingsItem = TextStyle(
+    fontSize: 20.0,
+    fontWeight: FontWeight.w400,
+  );
+
   static const TextStyle chartToolTip = TextStyle(
     fontSize: 20.0,
     fontWeight: FontWeight.w800,

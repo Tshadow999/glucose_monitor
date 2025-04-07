@@ -43,32 +43,29 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: 20.0),
-      child: Expanded(
-        child: Column(
-          children: [
-            Card(
-              child: Padding(
-                padding: EdgeInsets.all(20.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Text(
-                      "Glucose $glucoseUnitLabel",
-                      style: CustomTextStyles.cardTitle(context),
-                    ),
-                    SizedBox(height: 450, child: LineChart(mainData())),
-                  ],
-                ),
+    return Column(
+      children: [
+        Expanded(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(15.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Glucose $glucoseUnitLabel",
+                    style: CustomTextStyles.cardTitle(context),
+                  ),
+                  Expanded(child: LineChart(mainData())),
+                ],
               ),
             ),
-            const SizedBox(height: 10),
-            averageGlucoseCard(context),
-          ],
+          ),
         ),
-      ),
+        const SizedBox(height: 10),
+        averageGlucoseCard(context),
+        const SizedBox(height: 10),
+      ],
     );
   }
 

@@ -1,3 +1,4 @@
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:sugar_daddy/data/database_service.dart';
 import 'package:flutter/material.dart';
 import 'package:sugar_daddy/data/constants.dart';
@@ -15,6 +16,8 @@ void main() async {
 
   await NotificationService().init();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  FlutterBluePlus.setLogLevel(LogLevel.verbose, color: true);
 
   runApp(const MyApp());
 }

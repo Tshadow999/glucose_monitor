@@ -48,10 +48,7 @@ class _SettingsPageState extends State<SettingsPage> {
           Text("Customization", style: CustomTextStyles.settingsTitle),
           Divider(),
           SwitchListTile(
-            title: Text(
-              "Dark Mode",
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
+            title: Text("Dark Mode", style: CustomTextStyles.settingsItem),
             value: isDarkMode,
             onChanged: (value) async {
               setState(() {
@@ -73,10 +70,7 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  "Glucose Unit",
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
+                Text("Glucose Unit", style: CustomTextStyles.settingsItem),
                 CupertinoSegmentedControl<String>(
                   selectedColor: Theme.of(context).colorScheme.primary,
                   borderColor: Theme.of(context).colorScheme.primary,
@@ -120,19 +114,24 @@ class _SettingsPageState extends State<SettingsPage> {
           Text("Profile", style: CustomTextStyles.settingsTitle),
           Divider(),
           ListTile(
-            title: Text("Logout"),
+            title: Text("Logout", style: CustomTextStyles.settingsItem),
             onTap: () {
               logout(context);
             },
           ),
           ListTile(
-            title: Text("Update Password"),
+            title: Text(
+              "Update Password",
+              style: CustomTextStyles.settingsItem,
+            ),
             onTap: () => updatePassword(context),
           ),
           ListTile(
             title: Text(
               "Delete Account",
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+              style: CustomTextStyles.settingsItem.apply(
+                color: Theme.of(context).colorScheme.error,
+              ),
             ),
             onTap: () => deleteAccount(context),
           ),
