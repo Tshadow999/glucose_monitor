@@ -1,9 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:GlucoMonitor/data/constants.dart';
-import 'package:GlucoMonitor/data/notifiers.dart';
-import 'package:GlucoMonitor/views/pages/login_page.dart';
+import 'package:sugar_daddy/data/constants.dart';
+import 'package:sugar_daddy/data/notifiers.dart';
+import 'package:sugar_daddy/views/pages/login_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -115,6 +115,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
           ),
+          SizedBox(height: 16),
           Divider(),
           Text("Profile", style: CustomTextStyles.settingsTitle),
           Divider(),

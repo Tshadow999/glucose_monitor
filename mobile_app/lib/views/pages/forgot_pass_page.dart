@@ -1,7 +1,7 @@
-import 'package:GlucoMonitor/data/notifiers.dart';
-import 'package:GlucoMonitor/views/pages/login_page.dart';
+import 'package:sugar_daddy/data/notifiers.dart';
+import 'package:sugar_daddy/views/pages/login_page.dart';
 import 'package:flutter/material.dart';
-import 'package:GlucoMonitor/views/widgets/hero_widget.dart';
+import 'package:sugar_daddy/views/widgets/hero_widget.dart';
 
 class ForgotPassPage extends StatefulWidget {
   const ForgotPassPage({super.key});

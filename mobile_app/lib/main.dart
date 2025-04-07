@@ -1,9 +1,9 @@
-import 'package:GlucoMonitor/data/database_service.dart';
+import 'package:sugar_daddy/data/database_service.dart';
 import 'package:flutter/material.dart';
-import 'package:GlucoMonitor/data/constants.dart';
-import 'package:GlucoMonitor/data/notification_service.dart';
-import 'package:GlucoMonitor/views/pages/login_page.dart';
-import 'package:GlucoMonitor/data/notifiers.dart';
+import 'package:sugar_daddy/data/constants.dart';
+import 'package:sugar_daddy/data/notification_service.dart';
+import 'package:sugar_daddy/views/pages/login_page.dart';
+import 'package:sugar_daddy/data/notifiers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Firebase

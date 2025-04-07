@@ -4,7 +4,7 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
     <application
-        android:label="Gluco Monitor"
+        android:label="Sugar Daddy"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity

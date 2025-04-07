@@ -1,12 +1,12 @@
 import 'dart:math';
 
-import 'package:GlucoMonitor/data/notification_service.dart';
+import 'package:sugar_daddy/data/notification_service.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
-import 'package:GlucoMonitor/data/constants.dart';
-import 'package:GlucoMonitor/data/notifiers.dart';
+import 'package:sugar_daddy/data/constants.dart';
+import 'package:sugar_daddy/data/notifiers.dart';
 
 class DailyGlucoseChart extends StatefulWidget {
   const DailyGlucoseChart({super.key});
@@ -46,26 +46,28 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(vertical: 20.0),
-      child: Column(
-        children: [
-          Card(
-            child: Padding(
-              padding: EdgeInsets.all(20.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    "Glucose $glucoseUnitLabel",
-                    style: CustomTextStyles.cardTitle(context),
-                  ),
-                  SizedBox(height: 500, child: LineChart(mainData())),
-                ],
+      child: Expanded(
+        child: Column(
+          children: [
+            Card(
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      "Glucose $glucoseUnitLabel",
+                      style: CustomTextStyles.cardTitle(context),
+                    ),
+                    SizedBox(height: 450, child: LineChart(mainData())),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 10),
-          averageGlucoseCard(context),
-        ],
+            const SizedBox(height: 10),
+            averageGlucoseCard(context),
+          ],
+        ),
       ),
     );
   }

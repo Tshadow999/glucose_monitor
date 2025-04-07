@@ -1,9 +1,9 @@
-import 'package:GlucoMonitor/data/notifiers.dart';
+import 'package:sugar_daddy/data/notifiers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:GlucoMonitor/views/widget_tree.dart';
-import 'package:GlucoMonitor/views/widgets/hero_widget.dart';
+import 'package:sugar_daddy/views/widget_tree.dart';
+import 'package:sugar_daddy/views/widgets/hero_widget.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:GlucoMonitor/data/notifiers.dart';
+import 'package:sugar_daddy/data/notifiers.dart';
 
 class NavigationbarWidget extends StatelessWidget {
   const NavigationbarWidget({super.key});

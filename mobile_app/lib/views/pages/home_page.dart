@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:GlucoMonitor/views/widgets/daily_glucose_chart.dart';
+import 'package:sugar_daddy/views/widgets/daily_glucose_chart.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});

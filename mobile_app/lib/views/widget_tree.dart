@@ -1,9 +1,9 @@
-import 'package:GlucoMonitor/data/database_service.dart';
+import 'package:sugar_daddy/data/database_service.dart';
 import 'package:flutter/material.dart';
-import 'package:GlucoMonitor/views/widgets/navigationbar_widget.dart';
-import 'package:GlucoMonitor/views/pages/home_page.dart';
-import 'package:GlucoMonitor/views/pages/settings_page.dart';
-import 'package:GlucoMonitor/data/notifiers.dart';
+import 'package:sugar_daddy/views/widgets/navigationbar_widget.dart';
+import 'package:sugar_daddy/views/pages/home_page.dart';
+import 'package:sugar_daddy/views/pages/settings_page.dart';
+import 'package:sugar_daddy/data/notifiers.dart';
 
 List<Widget> pages = [HomePage(), SettingsPage()];
 

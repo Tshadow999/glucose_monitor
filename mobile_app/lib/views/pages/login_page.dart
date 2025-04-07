@@ -1,10 +1,10 @@
-import 'package:GlucoMonitor/data/notifiers.dart';
-import 'package:GlucoMonitor/views/pages/forgot_pass_page.dart';
-import 'package:GlucoMonitor/views/widget_tree.dart';
+import 'package:sugar_daddy/data/notifiers.dart';
+import 'package:sugar_daddy/views/pages/forgot_pass_page.dart';
+import 'package:sugar_daddy/views/widget_tree.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:GlucoMonitor/views/pages/signup_page.dart';
-import 'package:GlucoMonitor/views/widgets/hero_widget.dart';
+import 'package:sugar_daddy/views/pages/signup_page.dart';
+import 'package:sugar_daddy/views/widgets/hero_widget.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -23,7 +23,7 @@ class _LoginPageState extends State<LoginPage> {
     super.initState();
 
     emailController.text = "test@email.com";
-    passwordController.text = "Admin123456";
+    passwordController.text = "Admin12345";
   }
 
   @override

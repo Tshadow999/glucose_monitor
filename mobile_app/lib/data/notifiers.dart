@@ -1,4 +1,4 @@
-import 'package:GlucoMonitor/data/auth_service.dart';
+import 'package:sugar_daddy/data/auth_service.dart';
 import 'package:flutter/material.dart';
 
 ValueNotifier<int> selectedPageNotifier = ValueNotifier(0);
