@@ -28,7 +28,7 @@ class _BluetoothPageState extends State<BluetoothPage> {
       padding: const EdgeInsets.all(8.0),
       child: RefreshIndicator(
         onRefresh: refreshScan,
-        child: StreamBuilder<List<BluetoothDevice>>(
+        child: StreamBuilder<List<ScannedDevice>>(
           stream: GlucoseBluetoothService().deviceStream,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -36,18 +36,12 @@ class _BluetoothPageState extends State<BluetoothPage> {
             } else if (snapshot.hasError) {
               return Center(child: Text('Error: ${snapshot.error}'));
             } else if (snapshot.hasData && snapshot.data != null) {
-              List<BluetoothDevice> devices = snapshot.data!;
+              List<ScannedDevice> devices = snapshot.data!;
               return ListView.builder(
                 itemCount: devices.length,
                 itemBuilder: (context, index) {
-                  BluetoothDevice device = devices[index];
-                  return ListTile(
-                    title: Text(device.platformName.toString()),
-                    subtitle: Text(device.remoteId.toString()),
-                    onTap: () {
-                      // Handle device tap, maybe connect to the selected device
-                    },
-                  );
+                  ScannedDevice scan = devices[index];
+                  return showAvailableDeviceTile(scan);
                 },
               );
             } else {
@@ -56,6 +50,61 @@ class _BluetoothPageState extends State<BluetoothPage> {
           },
         ),
       ),
+    );
+  }
+
+  Widget showAvailableDeviceTile(ScannedDevice scan) {
+    return  ListTile(
+      title: Text(scan.device.platformName.toString()),
+      subtitle: Row(
+        children: [
+          Text("MAC: ${scan.device.remoteId}"),
+          Text("RSSI:  ${scan.rssi}"),
+        ],
+      ),
+      onTap: () async {
+        try {
+          await scan.device.connect();
+
+          if(!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Connected to ${scan.device.remoteId}')),
+          );
+
+          List<BluetoothService> services = await scan.device.discoverServices();
+          for (BluetoothService service in services) {
+            debugPrint('Found service: ${service.uuid}');
+            if (service.uuid.toString().toLowerCase() == ESP_SERVICE_UUID) {
+              for (BluetoothCharacteristic c in service.characteristics) {
+                if (c.uuid.toString().toLowerCase() == ESP_CHAR_UUID) {
+                  if (c.properties.read) {
+                    List<int> value = await c.read();
+                    String result = String.fromCharCodes(value);
+                    print("Read from ESP: $result");
+
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("ESP Data: $result")),
+                      );
+                    }
+                  }
+
+                  await c.setNotifyValue(true);
+                    c.lastValueStream.listen((value) {
+                      String notification = String.fromCharCodes(value);
+                      debugPrint('Notification: $notification');
+                    }
+                  );
+                }
+              }
+            }
+          }
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Connection failed: $e')),
+          );
+        }
+      },
     );
   }
 

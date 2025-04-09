@@ -5,12 +5,23 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
+class ScannedDevice {
+  final BluetoothDevice device;
+  final int rssi;
+
+ ScannedDevice({required this.device, required this.rssi}); 
+}
+
 class GlucoseReading {
   final double value; // in mg/dL
   final DateTime timestamp;
 
   GlucoseReading({required this.value, required this.timestamp});
 }
+
+// Connecting to the esp
+final String ESP_SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+final String ESP_CHAR_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
 class GlucoseBluetoothService with ChangeNotifier {
   // Singleton pattern
@@ -19,15 +30,18 @@ class GlucoseBluetoothService with ChangeNotifier {
   factory GlucoseBluetoothService() => _instance;
   GlucoseBluetoothService._internal();
 
-  final StreamController<List<BluetoothDevice>> _deviceStreamController =
-      StreamController<List<BluetoothDevice>>.broadcast();
-  Stream<List<BluetoothDevice>> get deviceStream =>
+  // Updating scanned devices
+  final StreamController<List<ScannedDevice>> _deviceStreamController =
+      StreamController<List<ScannedDevice>>.broadcast();
+  Stream<List<ScannedDevice>> get deviceStream =>
       _deviceStreamController.stream;
+
+  final Map<String, ScannedDevice> _scannedDevices = {};
 
   // Device and connection state
   BluetoothDevice? _connectedDevice;
-
   BluetoothDevice? get connectedDevice => _connectedDevice;
+
 
   // Initialize the service
   Future<void> initialize(BuildContext context) async {
@@ -70,7 +84,8 @@ class GlucoseBluetoothService with ChangeNotifier {
     BuildContext context, {
     int timeoutSeconds = 10,
   }) async {
-    List<BluetoothDevice> discoveredDevices = [];
+
+    _scannedDevices.clear();
 
     await FlutterBluePlus.startScan(timeout: Duration(seconds: timeoutSeconds));
 
@@ -78,13 +93,15 @@ class GlucoseBluetoothService with ChangeNotifier {
       (results) {
         if (results.isNotEmpty) {
           for (ScanResult r in results) {
-            if (!discoveredDevices.contains(r.device)) {
-              discoveredDevices.add(r.device);
-            }
+            final id = r.device.remoteId.str;
+            _scannedDevices[id] = ScannedDevice(device: r.device, rssi: r.rssi);
           }
         }
+        
+        final sortedDevices = _scannedDevices.values.toList()
+          ..sort((a, b) => b.rssi.compareTo(a.rssi));
 
-        _deviceStreamController.add(discoveredDevices);
+        _deviceStreamController.add(sortedDevices);
       },
       onError: (e) {
         if (!context.mounted) return;
