@@ -252,11 +252,10 @@ class _BluetoothPageState extends State<BluetoothPage> {
                   String notification = String.fromCharCodes(value);
                   debugPrint('Notification: $notification');
 
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('New reading: $notification')),
-                    );
-                  }
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('New reading: $notification')),
+                  );
                 });
 
                 ScaffoldMessenger.of(context).showSnackBar(

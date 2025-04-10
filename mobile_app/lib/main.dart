@@ -1,11 +1,12 @@
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-import 'package:sugar_daddy/data/database_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sugar_daddy/data/database_service.dart';
 import 'package:sugar_daddy/data/constants.dart';
+import 'package:sugar_daddy/data/local_storage.dart';
 import 'package:sugar_daddy/data/notification_service.dart';
 import 'package:sugar_daddy/views/pages/login_page.dart';
 import 'package:sugar_daddy/data/notifiers.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 // Firebase
 import 'package:firebase_core/firebase_core.dart';
@@ -15,9 +16,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await NotificationService().init();
+
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   FlutterBluePlus.setLogLevel(LogLevel.verbose, color: true);
+
+  GlucoseReadingService().initHive();
 
   runApp(const MyApp());
 }

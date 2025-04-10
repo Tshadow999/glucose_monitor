@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:sugar_daddy/data/local_storage.dart';
 import 'package:sugar_daddy/data/notification_service.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -34,7 +35,8 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
   @override
   void initState() {
     super.initState();
-    generateDummyData();
+    getDataFromLocalDevice();
+    // generateDummyData();
     timer = Timer.periodic(const Duration(minutes: 5), (timer) {
       if (!mounted) return;
       addNewGlucoseReading();
@@ -73,6 +75,38 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
   void dispose() {
     timer?.cancel();
     super.dispose();
+  }
+
+  void getDataFromLocalDevice() {
+    GlucoseReadingService().deleteAll();
+    List<GlucoseReading> storedReadings =
+        GlucoseReadingService().getAllReadings();
+
+    if (storedReadings.isEmpty) {
+      final now = DateTime.now();
+
+      final List<GlucoseReading> dummyData = List.generate(10, (index) {
+        final timestamp = now.subtract(Duration(minutes: 15 * (10 - index)));
+        final value = 4.5 + Random().nextDouble() * 3.0; // 4.5 to 7.5 range
+        return GlucoseReading(value: value, timestamp: timestamp);
+      });
+
+      for (var reading in dummyData) {
+        GlucoseReadingService().addToBox(reading);
+      }
+
+      // Re-fetch after adding dummy data
+      storedReadings = GlucoseReadingService().getAllReadings();
+    }
+    setState(() {
+      glucoseLevels =
+          storedReadings.map((reading) {
+            return FlSpot(
+              reading.timestamp.millisecondsSinceEpoch.toDouble(),
+              reading.value * unitMultiplier,
+            );
+          }).toList();
+    });
   }
 
   void generateDummyData() {

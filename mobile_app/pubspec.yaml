@@ -47,10 +47,14 @@ dependencies:
   firebase_auth: ^5.5.1
   cloud_firestore: ^5.6.6
   flutter_blue_plus: ^1.35.3
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  hive_generator:
+  build_runner:
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

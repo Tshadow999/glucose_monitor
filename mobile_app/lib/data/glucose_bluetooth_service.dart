@@ -9,7 +9,7 @@ class ScannedDevice {
   final BluetoothDevice device;
   final int rssi;
 
- ScannedDevice({required this.device, required this.rssi}); 
+  ScannedDevice({required this.device, required this.rssi});
 }
 
 class GlucoseReading {
@@ -42,9 +42,9 @@ class GlucoseBluetoothService with ChangeNotifier {
   BluetoothDevice? _connectedDevice;
   BluetoothDevice? get connectedDevice => _connectedDevice;
 
-
   // Initialize the service
   Future<void> initialize(BuildContext context) async {
+    FlutterBluePlus.setLogLevel(LogLevel.warning, color: false);
     bool permissions = await requestPermissions();
     if (!permissions) {
       if (context.mounted) {
@@ -84,7 +84,6 @@ class GlucoseBluetoothService with ChangeNotifier {
     BuildContext context, {
     int timeoutSeconds = 10,
   }) async {
-
     _scannedDevices.clear();
 
     await FlutterBluePlus.startScan(timeout: Duration(seconds: timeoutSeconds));
@@ -97,9 +96,10 @@ class GlucoseBluetoothService with ChangeNotifier {
             _scannedDevices[id] = ScannedDevice(device: r.device, rssi: r.rssi);
           }
         }
-        
-        final sortedDevices = _scannedDevices.values.toList()
-          ..sort((a, b) => b.rssi.compareTo(a.rssi));
+
+        final sortedDevices =
+            _scannedDevices.values.toList()
+              ..sort((a, b) => b.rssi.compareTo(a.rssi));
 
         _deviceStreamController.add(sortedDevices);
       },
