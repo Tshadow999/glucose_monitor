@@ -10,20 +10,23 @@ class BluetoothPage extends StatefulWidget {
 }
 
 class _BluetoothPageState extends State<BluetoothPage> {
+  bool isBluetoothOn = false;
+  BluetoothDevice? _connectedDevice;
+  bool _isConnecting = false;
+
   @override
   void initState() {
     super.initState();
+    checkBluetoothState();
     initBluetooth();
-  }
-
-  void initBluetooth() async {
-    await GlucoseBluetoothService().initialize(context);
-    if (!mounted) return;
-    await GlucoseBluetoothService().scanDevices(context);
   }
 
   @override
   Widget build(BuildContext context) {
+    return isBluetoothOn ? deviceList() : bluetoothButton();
+  }
+
+  Widget deviceList() {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: RefreshIndicator(
@@ -41,7 +44,7 @@ class _BluetoothPageState extends State<BluetoothPage> {
                 itemCount: devices.length,
                 itemBuilder: (context, index) {
                   ScannedDevice scan = devices[index];
-                  return showAvailableDeviceTile(scan);
+                  return showAvailableDeviceTile(scan, context);
                 },
               );
             } else {
@@ -53,64 +56,230 @@ class _BluetoothPageState extends State<BluetoothPage> {
     );
   }
 
-  Widget showAvailableDeviceTile(ScannedDevice scan) {
-    return  ListTile(
-      title: Text(scan.device.platformName.toString()),
-      subtitle: Row(
+  Widget bluetoothButton() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text("MAC: ${scan.device.remoteId}"),
-          Text("RSSI:  ${scan.rssi}"),
+          const Text('Bluetooth is turned off', style: TextStyle(fontSize: 18)),
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: turnBluetoothOn,
+            icon: const Icon(Icons.bluetooth),
+            label: const Text('Turn On Bluetooth'),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+          ),
         ],
       ),
-      onTap: () async {
-        try {
-          await scan.device.connect();
+    );
+  }
 
-          if(!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Connected to ${scan.device.remoteId}')),
-          );
+  void checkBluetoothState() {
+    FlutterBluePlus.adapterState.listen((BluetoothAdapterState state) {
+      setState(() {
+        isBluetoothOn = state == BluetoothAdapterState.on;
+      });
+    });
+  }
 
-          List<BluetoothService> services = await scan.device.discoverServices();
-          for (BluetoothService service in services) {
-            debugPrint('Found service: ${service.uuid}');
-            if (service.uuid.toString().toLowerCase() == ESP_SERVICE_UUID) {
-              for (BluetoothCharacteristic c in service.characteristics) {
-                if (c.uuid.toString().toLowerCase() == ESP_CHAR_UUID) {
-                  if (c.properties.read) {
-                    List<int> value = await c.read();
-                    String result = String.fromCharCodes(value);
-                    print("Read from ESP: $result");
+  void initBluetooth() async {
+    await GlucoseBluetoothService().initialize(context);
+    if (!mounted) return;
+    if (isBluetoothOn) {
+      await GlucoseBluetoothService().scanDevices(context);
+    }
+  }
 
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("ESP Data: $result")),
-                      );
-                    }
-                  }
+  Future<void> turnBluetoothOn() async {
+    try {
+      await FlutterBluePlus.turnOn();
 
-                  await c.setNotifyValue(true);
-                    c.lastValueStream.listen((value) {
-                      String notification = String.fromCharCodes(value);
-                      debugPrint('Notification: $notification');
-                    }
-                  );
-                }
-              }
-            }
-          }
-        } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Connection failed: $e')),
-          );
-        }
-      },
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (!mounted) return;
+      await GlucoseBluetoothService().scanDevices(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to turn on Bluetooth: $e')),
+      );
+    }
+  }
+
+  Widget showAvailableDeviceTile(ScannedDevice scan, BuildContext context) {
+    bool isConnected =
+        _connectedDevice != null &&
+        _connectedDevice!.remoteId == scan.device.remoteId;
+
+    return Card(
+      color:
+          isConnected
+              ? Theme.of(context).colorScheme.onPrimary
+              : Theme.of(context).colorScheme.surfaceContainer,
+      child: ListTile(
+        leading: Icon(
+          isConnected ? Icons.bluetooth_connected : Icons.bluetooth,
+          color: isConnected ? Colors.blue : null,
+        ),
+        title: Text(
+          scan.device.platformName.toString().isNotEmpty
+              ? scan.device.platformName.toString()
+              : "---",
+        ),
+        subtitle: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text("MAC: ${scan.device.remoteId}"),
+            Text("RSSI:  ${scan.rssi}"),
+          ],
+        ),
+        onTap: () {
+          if (isConnected || _isConnecting) return;
+
+          handleDeviceTileTap(scan.device);
+        },
+      ),
     );
   }
 
   Future<void> refreshScan() async {
+    if (!isBluetoothOn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please turn on Bluetooth first')),
+      );
+      return;
+    }
     await GlucoseBluetoothService().stopScanning();
     if (!mounted) return;
     await GlucoseBluetoothService().scanDevices(context);
+  }
+
+  Future<void> handleDeviceTileTap(BluetoothDevice device) async {
+    try {
+      setState(() {
+        _isConnecting = true;
+      });
+
+      // Stop scanning before connecting
+      await GlucoseBluetoothService().stopScanning();
+
+      // Connect to the device
+      await device.connect(timeout: const Duration(seconds: 15));
+
+      setState(() {
+        _connectedDevice = device;
+        _isConnecting = false;
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Connected to ${device.platformName}')),
+      );
+
+      // Immediately read data after connecting
+      readDataFromDevice(device);
+    } catch (e) {
+      setState(() {
+        _isConnecting = false;
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Connection failed: $e')));
+    }
+  }
+
+  Future<void> readDataFromDevice(BluetoothDevice device) async {
+    try {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Discovering services...')));
+
+      // Discover services
+      List<BluetoothService> services = await device.discoverServices();
+      bool foundService = false;
+
+      for (BluetoothService service in services) {
+        debugPrint('Found service: ${service.uuid}');
+
+        // Check if this is our target service
+        if (service.uuid.toString().toLowerCase() ==
+            ESP_SERVICE_UUID.toLowerCase()) {
+          foundService = true;
+
+          for (BluetoothCharacteristic c in service.characteristics) {
+            // Check if this is our target characteristic
+            if (c.uuid.toString().toLowerCase() ==
+                ESP_CHAR_UUID.toLowerCase()) {
+              // Read value if readable
+              if (c.properties.read) {
+                List<int> value = await c.read();
+                String result = String.fromCharCodes(value);
+                debugPrint("Read from ESP: $result");
+
+                if (mounted) {
+                  showDialog(
+                    context: context,
+                    builder:
+                        (context) => AlertDialog(
+                          title: const Text('Glucose Reading'),
+                          content: Text('Value: $result'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                  );
+                }
+              } else {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Characteristic is not readable'),
+                  ),
+                );
+              }
+
+              // Set up notifications if supported
+              if (c.properties.notify) {
+                await c.setNotifyValue(true);
+                c.lastValueStream.listen((value) {
+                  String notification = String.fromCharCodes(value);
+                  debugPrint('Notification: $notification');
+
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('New reading: $notification')),
+                    );
+                  }
+                });
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Notifications enabled')),
+                );
+              }
+            }
+          }
+        }
+      }
+
+      if (!foundService && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Target service not found on this device'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error reading data: $e')));
+    }
   }
 }
