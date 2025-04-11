@@ -31,7 +31,9 @@ class GlucoseReadingService {
     readingBox = await Hive.openBox('testBox');
   }
 
-  void addToBox(GlucoseReading newReading) {
+  void addReading(double value, DateTime? time) {
+    // TODO change datetime.now() ?
+    GlucoseReading newReading = GlucoseReading(value: value, timestamp: time == null ? DateTime.now() : time);
     readingBox.put(newReading.timestamp.toString(), newReading);
   }
 

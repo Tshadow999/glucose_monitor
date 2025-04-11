@@ -87,12 +87,12 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
 
       final List<GlucoseReading> dummyData = List.generate(10, (index) {
         final timestamp = now.subtract(Duration(minutes: 15 * (10 - index)));
-        final value = 4.5 + Random().nextDouble() * 3.0; // 4.5 to 7.5 range
+        final value = 4.5 + Random().nextDouble() * 3.0 * unitMultiplier; // 4.5 to 7.5 range
         return GlucoseReading(value: value, timestamp: timestamp);
       });
 
       for (var reading in dummyData) {
-        GlucoseReadingService().addToBox(reading);
+        GlucoseReadingService().addReading(reading.value, reading.timestamp);
       }
 
       // Re-fetch after adding dummy data
