@@ -31,9 +31,16 @@ class GlucoseReadingService {
     readingBox = await Hive.openBox('testBox');
   }
 
+  void addReadings(List<double> predictions, DateTime? time) {
+    //TODO: fix the datetime
+    for (int i = 0; i < predictions.length; i++) {
+      addReading(predictions[i], time ?? DateTime.now().subtract(Duration(minutes: 7 * i)));
+    }
+  }
+
   void addReading(double value, DateTime? time) {
     // TODO change datetime.now() ?
-    GlucoseReading newReading = GlucoseReading(value: value, timestamp: time == null ? DateTime.now() : time);
+    GlucoseReading newReading = GlucoseReading(value: value, timestamp: time ?? DateTime.now());
     readingBox.put(newReading.timestamp.toString(), newReading);
   }
 
@@ -41,9 +48,9 @@ class GlucoseReadingService {
     readingBox.deleteAt(index);
   }
 
-  void deleteAll() {
+  Future<void> deleteAll() async {
     final keys = readingBox.keys.toList();
-    readingBox.deleteAll(keys);
+    await readingBox.deleteAll(keys);
   }
 
   List<GlucoseReading> getAllReadings() {

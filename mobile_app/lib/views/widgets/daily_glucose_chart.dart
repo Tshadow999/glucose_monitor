@@ -1,11 +1,11 @@
 import 'dart:math';
+import 'dart:async';
+
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
 
 import 'package:sugar_daddy/data/local_storage.dart';
 import 'package:sugar_daddy/data/notification_service.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
-import 'dart:async';
-
 import 'package:sugar_daddy/data/constants.dart';
 import 'package:sugar_daddy/data/notifiers.dart';
 
@@ -36,7 +36,6 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
   void initState() {
     super.initState();
     getDataFromLocalDevice();
-    // generateDummyData();
     timer = Timer.periodic(const Duration(minutes: 5), (timer) {
       if (!mounted) return;
       addNewGlucoseReading();
@@ -78,32 +77,15 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
   }
 
   void getDataFromLocalDevice() {
-    GlucoseReadingService().deleteAll();
     List<GlucoseReading> storedReadings =
         GlucoseReadingService().getAllReadings();
 
-    if (storedReadings.isEmpty) {
-      final now = DateTime.now();
-
-      final List<GlucoseReading> dummyData = List.generate(10, (index) {
-        final timestamp = now.subtract(Duration(minutes: 15 * (10 - index)));
-        final value = 4.5 + Random().nextDouble() * 3.0 * unitMultiplier; // 4.5 to 7.5 range
-        return GlucoseReading(value: value, timestamp: timestamp);
-      });
-
-      for (var reading in dummyData) {
-        GlucoseReadingService().addReading(reading.value, reading.timestamp);
-      }
-
-      // Re-fetch after adding dummy data
-      storedReadings = GlucoseReadingService().getAllReadings();
-    }
     setState(() {
       glucoseLevels =
           storedReadings.map((reading) {
             return FlSpot(
               reading.timestamp.millisecondsSinceEpoch.toDouble(),
-              reading.value * unitMultiplier,
+              reading.value,
             );
           }).toList();
     });
@@ -113,19 +95,10 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
     DateTime now = DateTime.now();
     setState(() {
       glucoseLevels = List.generate(15, (index) {
-        // Create time points 15 minutes apart
         DateTime time = now.subtract(Duration(minutes: (15 - index) * 15));
 
-        // Base glucose level (mmol/L or mg/dL depending on your unit system)
-        double baseLevel =
-            5.5 * unitMultiplier; // Assuming 5.5 mmol/L as baseline
-
-        // Create a realistic sine wave with some variation
-        // Using multiple sine waves of different frequencies for more natural variation
-        double sineValue =
-            baseLevel + (2.0 * unitMultiplier * sin(index * 0.5));
-
-        // Add some minor random noise for realism
+        double baseLevel = 5.5 * unitMultiplier; 
+        double sineValue = baseLevel + (2.0 * unitMultiplier * sin(index * 0.5));
         sineValue += (0.1 * unitMultiplier * (Random().nextDouble() - 0.5));
 
         return FlSpot(time.millisecondsSinceEpoch.toDouble(), sineValue);

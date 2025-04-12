@@ -6,9 +6,8 @@ from pydantic import BaseModel
 # Initialize FastAPI app
 app = FastAPI()
 
-# Define input data model
 class InputData(BaseModel):
-    input: list[float]  # List of floats as input data
+    input: list[float]
 
 # Load your TensorFlow Lite model
 interpreter = tf.lite.Interpreter(model_path="../mobile_app/assets/model.tflite")

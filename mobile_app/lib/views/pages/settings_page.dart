@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:sugar_daddy/data/constants.dart';
+import 'package:sugar_daddy/data/local_storage.dart';
 import 'package:sugar_daddy/data/ml_model_service.dart';
 import 'package:sugar_daddy/data/notifiers.dart';
 import 'package:sugar_daddy/views/pages/login_page.dart';
@@ -137,9 +138,34 @@ class _SettingsPageState extends State<SettingsPage> {
             onTap: () => deleteAccount(context),
           ),
           SizedBox(height: 16),
-          TextButton(onPressed: () {
-            runModelFromCsv();
+          TextButton(onPressed: () async {
+            try {
+
+            List<double> predictions = await runModelFromCsv();
+
+            if(!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('AI is finished')),
+              );
+
+            GlucoseReadingService().addReadings(predictions, null);
+            }
+            catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(e.toString())),
+              );
+            }
+
           }, child: Text("Do AI"),),
+          SizedBox(height: 16),
+          TextButton(onPressed: () async {
+
+            await GlucoseReadingService().deleteAll();
+            if(!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Local data is deleted")),
+            );
+          }, child: Text("Delete local Data"),),
         ],
       ),
     );

@@ -2,4 +2,4 @@
 
 ## Features:
 - Mobile app
-- 
+- FastAPI server for ML model
