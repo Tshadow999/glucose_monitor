@@ -1,13 +1,11 @@
-import 'dart:typed_data';
-import 'package:tflite_v2/tflite_v2.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart' show rootBundle;
 
 // run this
 Future<List<double>> runModelFromCsv() async {
-  print("----- STARTING AI -----");
+  // print("----- STARTING AI -----");
   try {
-    await MlModelService().init();
-
     List<List<double>> inputData = await MlModelService().loadCsvData();
     
     if (inputData.isEmpty) {
@@ -15,25 +13,20 @@ Future<List<double>> runModelFromCsv() async {
       return [];
     }
     
-    print("Processing ${inputData.length} input segments");
+    // print("Processing ${inputData.length} input segments");
     List<double> predictions = [];
     
     for (var input in inputData) {
       try {
-        double result = await MlModelService().runModel(input);
-        print('Prediction: $result');
+        double result = await MlModelService().runModelPrediction(input);
+        // print('Prediction: $result');
         predictions.add(result); // Store the result
       } catch (e) {
         print('Error processing segment: $e');
         // Continue with next segment rather than failing entire batch
       }
     }
-   
-    if (predictions.isNotEmpty) {
-      double average = predictions.reduce((a, b) => a + b) / predictions.length;
-      print('Average prediction: $average');
-    }
-    
+      
     return predictions;
   } catch (e) {
     print('Error in runModelFromCsv: $e');
@@ -49,71 +42,13 @@ class MlModelService {
   bool modelLoaded = false;
   double modelOutput = -1.0;
   
-  Future<void> init() async {
-
-    if (modelLoaded) return;
-    
-    try {
-      String? res = await Tflite.loadModel(
-        model: "assets/model.tflite",
-        numThreads: 1,
-        isAsset: true,
-      );
-      
-      print("Model load result: $res");
-      modelLoaded = true;
-    } catch (e) {
-      print("Error initializing model: $e");
-      rethrow;
-    }
-  }
-  
-  Future<double> runModel(List<double> input) async {
-    if (input.length != 120) {
-      throw Exception("Input must have exactly 120 values, got ${input.length}");
-    }
-    
-    try {
-      // Reshape input to match model expectation [1, 120, 1]
-      // But tflite_v2 expects a flat array, so we prepare accordingly
-      final Float32List floatInput = Float32List.fromList(input);
-      
-      // Convert to byte buffer
-      final inputBytes = floatInput.buffer.asUint8List();
-      
-      // Run the model
-      var result = await Tflite.runModelOnBinary(
-        binary: inputBytes,
-        numResults: 1,
-        threshold: 0.05,  // Lower threshold to ensure we get results
-      );
-      
-      if (result != null && result.isNotEmpty) {
-        print("Raw output: $result");
-        
-        // Extract the value - handle both formats of output
-        final value = result.first['confidence'] ?? 
-                     result.first['output'] ?? 
-                     result.first['index'] ?? 
-                     0.0;
-                     
-        return (value as num).toDouble();
-      } else {
-        throw Exception("No result returned from model");
-      }
-    } catch (e) {
-      print("Error running model: $e");
-      rethrow;
-    }
-  }
-  
   Future<List<List<double>>> loadCsvData() async {
     try {
       final rawData = await rootBundle.loadString('assets/modelData.csv');
       final lines = rawData.trim().split("\n");
       List<List<double>> data = [];
       
-      print("Processing ${lines.length} lines from CSV");
+      //print("Processing ${lines.length} lines from CSV");
       
       for (var line in lines) {
         if (line.trim().isEmpty) continue;
@@ -144,12 +79,41 @@ class MlModelService {
       return [];
     }
   }
-  
-  // Clean up resources when done
-  Future<void> dispose() async {
-    if (modelLoaded) {
-      await Tflite.close();
-      modelLoaded = false;
+
+Future<double> runModelPrediction(List<double> inputData) async {
+  const String apiUrl = "http://145.126.35.126:8000/predict/";
+  final headers = {'Content-Type': 'application/json'};
+  double prediction = -1.0;
+
+  try {
+      final Map<String, dynamic> inputJson = {
+        'input': inputData,
+      };
+
+      // Send the POST request
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: headers,
+        body: json.encode(inputJson),
+      );
+
+      // Check if the response is successful (status code 200)
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        prediction = (data['prediction']);
+        print('Prediction: $prediction');
+
+        return prediction;
+
+      } else {
+        // Handle unsuccessful response
+        print('Error: Failed to get prediction, Status Code: ${response.statusCode}');
+        return -1.0;
+      }
+    } catch (e) {
+      print('Error during prediction: $e');
+      return -1.0;
     }
   }
+
 }

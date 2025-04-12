@@ -78,7 +78,7 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
   }
 
   void getDataFromLocalDevice() {
-    GlucoseReadingService().deleteAll();
+    //GlucoseReadingService().deleteAll();
     List<GlucoseReading> storedReadings =
         GlucoseReadingService().getAllReadings();
 
@@ -103,7 +103,7 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
           storedReadings.map((reading) {
             return FlSpot(
               reading.timestamp.millisecondsSinceEpoch.toDouble(),
-              reading.value * unitMultiplier,
+              reading.value,
             );
           }).toList();
     });
