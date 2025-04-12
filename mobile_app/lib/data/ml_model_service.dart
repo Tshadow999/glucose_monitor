@@ -1,9 +1,9 @@
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
-
 // run this
 Future<double> runModelFromCsv() async {
+  print("----- STARTING AI -----");
   await MlModelService().init();
 
   List<int> inputData = await MlModelService().loadCsvData();
@@ -27,7 +27,13 @@ class MlModelService {
   double modelOutput = -1.0;
 
   Future<void> init() async{
-    interpreter = await Interpreter.fromAsset('model.tflite');  }
+    final options = InterpreterOptions();
+  
+    interpreter = await Interpreter.fromAsset(
+      'assets/model.tflite',
+        options: options,
+      );
+  }
 
   void setModelInput(List<int> input) {
     modelInput = [input.map((e) => e.toDouble()).toList()];

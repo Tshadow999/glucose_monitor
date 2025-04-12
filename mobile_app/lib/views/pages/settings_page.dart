@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:sugar_daddy/data/constants.dart';
+import 'package:sugar_daddy/data/ml_model_service.dart';
 import 'package:sugar_daddy/data/notifiers.dart';
 import 'package:sugar_daddy/views/pages/login_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -135,6 +136,10 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             onTap: () => deleteAccount(context),
           ),
+          SizedBox(height: 16),
+          TextButton(onPressed: () {
+            runModelFromCsv();
+          }, child: Text("Do AI"),),
         ],
       ),
     );

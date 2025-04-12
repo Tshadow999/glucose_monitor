@@ -10,7 +10,8 @@ plugins {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
-}
+    implementation("org.tensorflow:tensorflow-lite:2.8.0")
+    implementation("org.tensorflow:tensorflow-lite-select-tf-ops:2.8.0")}
 
 android {
     namespace = "com.example.mobile_app"
