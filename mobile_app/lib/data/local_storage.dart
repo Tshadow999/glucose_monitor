@@ -31,17 +31,44 @@ class GlucoseReadingService {
     readingBox = await Hive.openBox('testBox');
   }
 
-  void addReadings(List<double> predictions, DateTime? time) {
-    //TODO: fix the datetime
-    for (int i = 0; i < predictions.length; i++) {
-      addReading(predictions[i], time ?? DateTime.now().subtract(Duration(minutes: 7 * i)));
+  String getCurrentWeekKey() {
+    final now = DateTime.now();
+    final year = now.year;
+    final weekOfYear = getWeekOfYear(now);
+    return '$year-$weekOfYear';
+  }
+
+  int getWeekOfYear(DateTime date) {
+    final startOfYear = DateTime(date.year, 1, 1);
+    final difference = date.difference(startOfYear).inDays;
+    return (difference / 7).floor() + 1;
+  }
+
+  void clearOldData() {
+    final currentWeekKey = getCurrentWeekKey();
+    final keys = readingBox.keys.toList();
+
+    for (var key in keys) {
+      if (!key.startsWith(currentWeekKey)) {
+        readingBox.delete(key);
+      }
     }
   }
 
-  void addReading(double value, DateTime? time) {
-    // TODO change datetime.now() ?
-    GlucoseReading newReading = GlucoseReading(value: value, timestamp: time ?? DateTime.now());
-    readingBox.put(newReading.timestamp.toString(), newReading);
+  void addReadings(List<double> predictions) {
+    clearOldData();
+
+    for (int i = 0; i < predictions.length; i++) {
+      addReading(predictions[i], DateTime.now().subtract(Duration(minutes: 10 * i)));
+    } 
+  }
+
+  void addReading(double value, DateTime time) {
+    GlucoseReading newReading = GlucoseReading(value: value, timestamp: time);
+
+    // Store the data with the key of the current week and year
+    final currentWeekKey = getCurrentWeekKey();
+    readingBox.put('$currentWeekKey-${time.toString()}', newReading);
   }
 
   void deleteFromBoxAt(int index) {
@@ -53,9 +80,19 @@ class GlucoseReadingService {
     await readingBox.deleteAll(keys);
   }
 
-  List<GlucoseReading> getAllReadings() {
+  List<GlucoseReading> getTodayReadings() {
     final readings = readingBox.values.cast<GlucoseReading>().toList();
-    readings.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-    return readings;
+  
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    
+    final todaysReadings = readings.where((reading) {
+      final timestamp = reading.timestamp;
+      return timestamp.isAfter(startOfDay.subtract(Duration(seconds: 1))) && timestamp.isBefore(now.add(Duration(days: 1)));
+    }).toList();
+
+    todaysReadings.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+    return todaysReadings;
   }
 }

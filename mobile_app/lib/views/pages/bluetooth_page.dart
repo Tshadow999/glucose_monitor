@@ -258,6 +258,7 @@ class _BluetoothPageState extends State<BluetoothPage> {
                   );
                 });
 
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Notifications enabled')),
                 );

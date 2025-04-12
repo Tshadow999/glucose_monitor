@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:sugar_daddy/data/local_storage.dart';
 import 'package:sugar_daddy/data/notification_service.dart';
@@ -23,19 +24,24 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
   Timer? timer;
 
   double get unitMultiplier => glucoseUnitNotifier.value ? 18 : 1;
-
+  double get inverseUnitMultiplier => glucoseUnitNotifier.value ? 1 : 18;
+  
   String get glucoseUnitLabel =>
       glucoseUnitNotifier.value
           ? CustomConstants.unitMg
           : CustomConstants.unitMmol;
 
-  double get lowThreshold => 3.9 * unitMultiplier;
-  double get highThreshold => 7.0 * unitMultiplier;
+double get lowThreshold => lowThresholdRaw * unitMultiplier;
+double get highThreshold => highThresholdRaw * unitMultiplier;
+
+  double lowThresholdRaw = 4.0;
+  double highThresholdRaw = 10.0;
 
   @override
   void initState() {
     super.initState();
     getDataFromLocalDevice();
+    loadPrefs();
     timer = Timer.periodic(const Duration(minutes: 5), (timer) {
       if (!mounted) return;
       addNewGlucoseReading();
@@ -76,16 +82,24 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
     super.dispose();
   }
 
+  Future<void> loadPrefs() async {
+  final prefs = await SharedPreferences.getInstance();
+  setState(() {
+    lowThresholdRaw = prefs.getDouble('min_glucose') ?? 4.0;
+    highThresholdRaw = prefs.getDouble('max_glucose') ?? 8.0;
+  });
+}
+
   void getDataFromLocalDevice() {
     List<GlucoseReading> storedReadings =
-        GlucoseReadingService().getAllReadings();
+        GlucoseReadingService().getTodayReadings();
 
     setState(() {
       glucoseLevels =
           storedReadings.map((reading) {
             return FlSpot(
               reading.timestamp.millisecondsSinceEpoch.toDouble(),
-              reading.value,
+              reading.value / inverseUnitMultiplier,
             );
           }).toList();
     });
@@ -175,10 +189,10 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
-            reservedSize: 38,
-            maxIncluded: false,
+            reservedSize: 30,
             minIncluded: false,
-            interval: Duration(hours: 1).inMilliseconds.toDouble(),
+            maxIncluded: false,
+            interval: Duration(minutes: 90).inMilliseconds.toDouble(),
             getTitlesWidget: bottomTitleWidgets,
           ),
         ),
@@ -270,7 +284,9 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
       ),
       lineBarsData: [
         LineChartBarData(
-          spots: glucoseLevels,
+          spots: glucoseLevels
+        .where((spot) => spot.x >= minX && spot.x <= maxX) 
+        .toList(),
           isCurved: true,
           gradient: LinearGradient(
             colors: [

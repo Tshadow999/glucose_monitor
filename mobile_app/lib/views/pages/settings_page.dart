@@ -20,6 +20,11 @@ class _SettingsPageState extends State<SettingsPage> {
 
   double sliderValue = 0.0;
   String selectedUnit = CustomConstants.unitMmol;
+  double get unitMultiplier =>selectedUnit == CustomConstants.unitMmol ? 1.0: 18.0;
+
+  // mmol/L default
+  double minGlucose = 4.0; 
+  double maxGlucose = 8.0;
 
   bool isDarkMode = true;
 
@@ -37,37 +42,155 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() {
       selectedUnit = unit ? CustomConstants.unitMg : CustomConstants.unitMmol;
       isDarkMode = prefs.getBool(CustomConstants.themeModePrefKey) ?? false;
+
+      minGlucose = prefs.getDouble('min_glucose') ?? 4.0;
+      maxGlucose = prefs.getDouble('max_glucose') ?? 8.0;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
-        children: [
-          Divider(),
-          Text("Customization", style: CustomTextStyles.settingsTitle),
-          Divider(),
-          SwitchListTile(
-            title: Text("Dark Mode", style: CustomTextStyles.settingsItem),
-            value: isDarkMode,
-            onChanged: (value) async {
-              setState(() {
-                isDarkMode = value;
-                darkModeNotifier.value = value;
-              });
-
-              final SharedPreferences prefs =
-                  await SharedPreferences.getInstance();
-              await prefs.setBool(
-                CustomConstants.themeModePrefKey,
-                darkModeNotifier.value,
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            Divider(),
+            Text("Customization", style: CustomTextStyles.settingsTitle),
+            Divider(),
+            SwitchListTile(
+              title: Text("Dark Mode", style: CustomTextStyles.settingsItem),
+              value: isDarkMode,
+              onChanged: (value) async {
+                setState(() {
+                  isDarkMode = value;
+                  darkModeNotifier.value = value;
+                });
+      
+                final SharedPreferences prefs =
+                    await SharedPreferences.getInstance();
+                await prefs.setBool(
+                  CustomConstants.themeModePrefKey,
+                  darkModeNotifier.value,
+                );
+              },
+            ),
+            SizedBox(height: 16),
+            glucoseUnitToggle(),
+            SizedBox(height: 16),
+            glucoseThresholdSliders(),
+            SizedBox(height: 16),
+            Divider(),
+            Text("Profile", style: CustomTextStyles.settingsTitle),
+            Divider(),
+            ListTile(
+              title: Text("Logout", style: CustomTextStyles.settingsItem),
+              onTap: () {
+                logout(context);
+              },
+            ),
+            ListTile(
+              title: Text(
+                "Update Password",
+                style: CustomTextStyles.settingsItem,
+              ),
+              onTap: () => updatePassword(context),
+            ),
+            ListTile(
+              title: Text(
+                "Delete Account",
+                style: CustomTextStyles.settingsItem.apply(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+              onTap: () => deleteAccount(context),
+            ),
+            SizedBox(height: 16),
+            TextButton(onPressed: () async {
+              try {
+      
+              List<double> predictions = await runModelFromCsv();
+      
+              if(!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('AI is finished')),
+                );
+      
+              GlucoseReadingService().addReadings(predictions);
+              }
+              catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(e.toString())),
+                );
+              }
+      
+            }, child: Text("Do AI"),),
+            SizedBox(height: 16),
+            TextButton(onPressed: () async {
+      
+              await GlucoseReadingService().deleteAll();
+              if(!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Local data is deleted")),
               );
-            },
+            }, child: Text("Delete local Data"),),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget glucoseThresholdSliders() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Text("Glucose Thresholds", style: CustomTextStyles.settingsItem),
+        ),
+        SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text("Min: ${(minGlucose * unitMultiplier).toStringAsFixed(1)} $selectedUnit"),
+                  Text("Max: ${(maxGlucose * unitMultiplier).toStringAsFixed(1)} $selectedUnit"),
+                ],
+              ),
+              RangeSlider(
+                values: RangeValues(minGlucose, maxGlucose),
+                min: 2.0,
+                max: 10.0,
+                divisions: 130,
+                labels: null,
+                /* optional:
+                angeLabels(
+                  (minGlucose * unitMultiplier).toStringAsFixed(1),
+                  (maxGlucose * unitMultiplier).toStringAsFixed(1),
+                ),
+                */
+                onChanged: (RangeValues values) {
+                  setState(() {
+                    minGlucose = values.start;
+                    maxGlucose = values.end;
+                  });
+                },
+                onChangeEnd: (RangeValues values) {
+                  saveGlucoseThresholds();
+                },
+              ),
+            ],
           ),
-          SizedBox(height: 16),
-          Padding(
+        ),
+      ],
+    );
+  }
+
+  Widget glucoseUnitToggle() {
+    return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -110,65 +233,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ],
             ),
-          ),
-          SizedBox(height: 16),
-          Divider(),
-          Text("Profile", style: CustomTextStyles.settingsTitle),
-          Divider(),
-          ListTile(
-            title: Text("Logout", style: CustomTextStyles.settingsItem),
-            onTap: () {
-              logout(context);
-            },
-          ),
-          ListTile(
-            title: Text(
-              "Update Password",
-              style: CustomTextStyles.settingsItem,
-            ),
-            onTap: () => updatePassword(context),
-          ),
-          ListTile(
-            title: Text(
-              "Delete Account",
-              style: CustomTextStyles.settingsItem.apply(
-                color: Theme.of(context).colorScheme.error,
-              ),
-            ),
-            onTap: () => deleteAccount(context),
-          ),
-          SizedBox(height: 16),
-          TextButton(onPressed: () async {
-            try {
-
-            List<double> predictions = await runModelFromCsv();
-
-            if(!context.mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('AI is finished')),
-              );
-
-            GlucoseReadingService().addReadings(predictions, null);
-            }
-            catch (e) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(e.toString())),
-              );
-            }
-
-          }, child: Text("Do AI"),),
-          SizedBox(height: 16),
-          TextButton(onPressed: () async {
-
-            await GlucoseReadingService().deleteAll();
-            if(!context.mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Local data is deleted")),
-            );
-          }, child: Text("Delete local Data"),),
-        ],
-      ),
-    );
+          );
   }
 
   Future<void> confirmReset(
@@ -370,5 +435,11 @@ class _SettingsPageState extends State<SettingsPage> {
         context,
       ).showSnackBar(SnackBar(content: Text(e.message ?? "An error occured")));
     }
+  }
+
+  Future<void> saveGlucoseThresholds() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('min_glucose', minGlucose);
+    await prefs.setDouble('max_glucose', maxGlucose);
   }
 }
