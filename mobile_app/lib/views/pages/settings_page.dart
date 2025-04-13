@@ -1,9 +1,12 @@
+import 'dart:math';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:sugar_daddy/data/constants.dart';
 import 'package:sugar_daddy/data/local_storage.dart';
 import 'package:sugar_daddy/data/ml_model_service.dart';
+import 'package:sugar_daddy/data/notification_service.dart';
 import 'package:sugar_daddy/data/notifiers.dart';
 import 'package:sugar_daddy/views/pages/login_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -122,6 +125,37 @@ class _SettingsPageState extends State<SettingsPage> {
                 }
               },
               child: Text("Do AI"),
+            ),
+            SizedBox(height: 16),
+            TextButton(
+              onPressed: () async {
+                DateTime now = DateTime.now();
+                final random = Random();
+                for (int i = 15; i > 0; i--) {
+                  double reading;
+                  if (i > 5) {
+                    reading = 110.0 + random.nextInt(5);
+                  } else if (i > 10) {
+                    reading = 110.0 + random.nextInt(10);
+                  } else {
+                    reading = 120.0 + random.nextInt(10);
+                  }
+
+                  /*
+                  GlucoseReadingService().addReading(
+                    reading,
+                    now.subtract(Duration(minutes: 15 * i)),
+                  );
+*/
+                  NotificationService().show(
+                    id: 3,
+                    title: "Warning high blood sugar detected",
+                    body:
+                        "Your blood sugar is $reading mg/dL, consider taking action!",
+                  );
+                }
+              },
+              child: Text("Add data"),
             ),
             SizedBox(height: 16),
             TextButton(

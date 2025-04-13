@@ -116,6 +116,9 @@ class _BluetoothPageState extends State<BluetoothPage> {
         _connectedDevice != null &&
         _connectedDevice!.remoteId == scan.device.remoteId;
 
+    // Dont list devices without a name
+    if (scan.device.platformName.toString().isEmpty) return Container();
+
     return Card(
       color:
           isConnected
