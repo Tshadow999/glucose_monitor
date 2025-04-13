@@ -25,14 +25,14 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
 
   double get unitMultiplier => glucoseUnitNotifier.value ? 18 : 1;
   double get inverseUnitMultiplier => glucoseUnitNotifier.value ? 1 : 18;
-  
+
   String get glucoseUnitLabel =>
       glucoseUnitNotifier.value
           ? CustomConstants.unitMg
           : CustomConstants.unitMmol;
 
-double get lowThreshold => lowThresholdRaw * unitMultiplier;
-double get highThreshold => highThresholdRaw * unitMultiplier;
+  double get lowThreshold => lowThresholdRaw * unitMultiplier;
+  double get highThreshold => highThresholdRaw * unitMultiplier;
 
   double lowThresholdRaw = 4.0;
   double highThresholdRaw = 10.0;
@@ -83,12 +83,12 @@ double get highThreshold => highThresholdRaw * unitMultiplier;
   }
 
   Future<void> loadPrefs() async {
-  final prefs = await SharedPreferences.getInstance();
-  setState(() {
-    lowThresholdRaw = prefs.getDouble('min_glucose') ?? 4.0;
-    highThresholdRaw = prefs.getDouble('max_glucose') ?? 8.0;
-  });
-}
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      lowThresholdRaw = prefs.getDouble('min_glucose') ?? 4.0;
+      highThresholdRaw = prefs.getDouble('max_glucose') ?? 8.0;
+    });
+  }
 
   void getDataFromLocalDevice() {
     List<GlucoseReading> storedReadings =
@@ -111,8 +111,9 @@ double get highThreshold => highThresholdRaw * unitMultiplier;
       glucoseLevels = List.generate(15, (index) {
         DateTime time = now.subtract(Duration(minutes: (15 - index) * 15));
 
-        double baseLevel = 5.5 * unitMultiplier; 
-        double sineValue = baseLevel + (2.0 * unitMultiplier * sin(index * 0.5));
+        double baseLevel = 5.5 * unitMultiplier;
+        double sineValue =
+            baseLevel + (2.0 * unitMultiplier * sin(index * 0.5));
         sineValue += (0.1 * unitMultiplier * (Random().nextDouble() - 0.5));
 
         return FlSpot(time.millisecondsSinceEpoch.toDouble(), sineValue);
@@ -216,7 +217,7 @@ double get highThreshold => highThresholdRaw * unitMultiplier;
       minX: minX,
       maxX: maxX,
       minY: 2 * unitMultiplier,
-      maxY: 8 * unitMultiplier,
+      maxY: 10 * unitMultiplier,
       lineTouchData: LineTouchData(
         touchTooltipData: LineTouchTooltipData(
           tooltipPadding: const EdgeInsets.all(8),
@@ -284,9 +285,10 @@ double get highThreshold => highThresholdRaw * unitMultiplier;
       ),
       lineBarsData: [
         LineChartBarData(
-          spots: glucoseLevels
-        .where((spot) => spot.x >= minX && spot.x <= maxX) 
-        .toList(),
+          spots:
+              glucoseLevels
+                  .where((spot) => spot.x >= minX && spot.x <= maxX)
+                  .toList(),
           isCurved: true,
           gradient: LinearGradient(
             colors: [

@@ -20,10 +20,11 @@ class _SettingsPageState extends State<SettingsPage> {
 
   double sliderValue = 0.0;
   String selectedUnit = CustomConstants.unitMmol;
-  double get unitMultiplier =>selectedUnit == CustomConstants.unitMmol ? 1.0: 18.0;
+  double get unitMultiplier =>
+      selectedUnit == CustomConstants.unitMmol ? 1.0 : 18.0;
 
   // mmol/L default
-  double minGlucose = 4.0; 
+  double minGlucose = 4.0;
   double maxGlucose = 8.0;
 
   bool isDarkMode = true;
@@ -55,9 +56,7 @@ class _SettingsPageState extends State<SettingsPage> {
         padding: const EdgeInsets.all(8.0),
         child: Column(
           children: [
-            Divider(),
-            Text("Customization", style: CustomTextStyles.settingsTitle),
-            Divider(),
+            ...listTitle("Customization"),
             SwitchListTile(
               title: Text("Dark Mode", style: CustomTextStyles.settingsItem),
               value: isDarkMode,
@@ -66,7 +65,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   isDarkMode = value;
                   darkModeNotifier.value = value;
                 });
-      
+
                 final SharedPreferences prefs =
                     await SharedPreferences.getInstance();
                 await prefs.setBool(
@@ -80,9 +79,7 @@ class _SettingsPageState extends State<SettingsPage> {
             SizedBox(height: 16),
             glucoseThresholdSliders(),
             SizedBox(height: 16),
-            Divider(),
-            Text("Profile", style: CustomTextStyles.settingsTitle),
-            Divider(),
+            ...listTitle("Profile"),
             ListTile(
               title: Text("Logout", style: CustomTextStyles.settingsItem),
               onTap: () {
@@ -106,38 +103,49 @@ class _SettingsPageState extends State<SettingsPage> {
               onTap: () => deleteAccount(context),
             ),
             SizedBox(height: 16),
-            TextButton(onPressed: () async {
-              try {
-      
-              List<double> predictions = await runModelFromCsv();
-      
-              if(!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('AI is finished')),
-                );
-      
-              GlucoseReadingService().addReadings(predictions);
-              }
-              catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(e.toString())),
-                );
-              }
-      
-            }, child: Text("Do AI"),),
+            ...listTitle("Debugging"),
+            TextButton(
+              onPressed: () async {
+                try {
+                  List<double> predictions = await runModelFromCsv();
+
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('AI is finished')));
+
+                  GlucoseReadingService().addReadings(predictions);
+                } catch (e) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(e.toString())));
+                }
+              },
+              child: Text("Do AI"),
+            ),
             SizedBox(height: 16),
-            TextButton(onPressed: () async {
-      
-              await GlucoseReadingService().deleteAll();
-              if(!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("Local data is deleted")),
-              );
-            }, child: Text("Delete local Data"),),
+            TextButton(
+              onPressed: () async {
+                await GlucoseReadingService().deleteAll();
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Local data is deleted")),
+                );
+              },
+              child: Text("Delete local Data"),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  List<Widget> listTitle(String title) {
+    return [
+      Divider(),
+      Text(title, style: CustomTextStyles.settingsTitle),
+      Divider(),
+    ];
   }
 
   Widget glucoseThresholdSliders() {
@@ -146,7 +154,10 @@ class _SettingsPageState extends State<SettingsPage> {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Text("Glucose Thresholds", style: CustomTextStyles.settingsItem),
+          child: Text(
+            "Glucose Thresholds",
+            style: CustomTextStyles.settingsItem,
+          ),
         ),
         SizedBox(height: 8),
         Padding(
@@ -156,8 +167,12 @@ class _SettingsPageState extends State<SettingsPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text("Min: ${(minGlucose * unitMultiplier).toStringAsFixed(1)} $selectedUnit"),
-                  Text("Max: ${(maxGlucose * unitMultiplier).toStringAsFixed(1)} $selectedUnit"),
+                  Text(
+                    "Min: ${(minGlucose * unitMultiplier).toStringAsFixed(1)} $selectedUnit",
+                  ),
+                  Text(
+                    "Max: ${(maxGlucose * unitMultiplier).toStringAsFixed(1)} $selectedUnit",
+                  ),
                 ],
               ),
               RangeSlider(
@@ -191,49 +206,42 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget glucoseUnitToggle() {
     return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text("Glucose Unit", style: CustomTextStyles.settingsItem),
-                CupertinoSegmentedControl<String>(
-                  selectedColor: Theme.of(context).colorScheme.primary,
-                  borderColor: Theme.of(context).colorScheme.primary,
-                  unselectedColor: Theme.of(context).colorScheme.surface,
-                  groupValue: selectedUnit,
-                  children: {
-                    CustomConstants.unitMmol: Padding(
-                      padding: EdgeInsets.symmetric(
-                        vertical: 8,
-                        horizontal: 16,
-                      ),
-                      child: Text(CustomConstants.unitMmol),
-                    ),
-                    CustomConstants.unitMg: Padding(
-                      padding: EdgeInsets.symmetric(
-                        vertical: 8,
-                        horizontal: 16,
-                      ),
-                      child: Text(CustomConstants.unitMg),
-                    ),
-                  },
-                  onValueChanged: (value) async {
-                    final SharedPreferences prefs =
-                        await SharedPreferences.getInstance();
-                    await prefs.setBool(
-                      CustomConstants.glucoseUnitPrefKey,
-                      value == CustomConstants.unitMg,
-                    );
-                    setState(() {
-                      selectedUnit = value;
-                      glucoseUnitNotifier.value =
-                          value == CustomConstants.unitMg;
-                    });
-                  },
-                ),
-              ],
-            ),
-          );
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text("Glucose Unit", style: CustomTextStyles.settingsItem),
+          CupertinoSegmentedControl<String>(
+            selectedColor: Theme.of(context).colorScheme.primary,
+            borderColor: Theme.of(context).colorScheme.primary,
+            unselectedColor: Theme.of(context).colorScheme.surface,
+            groupValue: selectedUnit,
+            children: {
+              CustomConstants.unitMmol: Padding(
+                padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                child: Text(CustomConstants.unitMmol),
+              ),
+              CustomConstants.unitMg: Padding(
+                padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                child: Text(CustomConstants.unitMg),
+              ),
+            },
+            onValueChanged: (value) async {
+              final SharedPreferences prefs =
+                  await SharedPreferences.getInstance();
+              await prefs.setBool(
+                CustomConstants.glucoseUnitPrefKey,
+                value == CustomConstants.unitMg,
+              );
+              setState(() {
+                selectedUnit = value;
+                glucoseUnitNotifier.value = value == CustomConstants.unitMg;
+              });
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> confirmReset(

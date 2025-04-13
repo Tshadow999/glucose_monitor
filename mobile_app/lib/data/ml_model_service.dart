@@ -10,7 +10,7 @@ Future<List<double>> runModelFromCsv() async {
   try {
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/readings.csv');
-    String? path = file.path;
+    String? path = null; // file.path;
     List<List<double>> inputData = await MlModelService().loadCsvData(path);
 
     if (inputData.isEmpty) {

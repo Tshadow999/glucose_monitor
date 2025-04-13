@@ -9,5 +9,4 @@ ValueNotifier<bool> darkModeNotifier = ValueNotifier(true);
 /// glucoseUnitNotifier.value ? CustomConstants.unitMg : CustomConstants.unitMmol
 ValueNotifier<bool> glucoseUnitNotifier = ValueNotifier(true);
 
-//
 ValueNotifier<AuthService> authService = ValueNotifier(AuthService());
