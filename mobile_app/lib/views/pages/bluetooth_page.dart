@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sugar_daddy/data/glucose_bluetooth_service.dart';
 
 class BluetoothPage extends StatefulWidget {
@@ -214,48 +217,50 @@ class _BluetoothPageState extends State<BluetoothPage> {
             // Check if this is our target characteristic
             if (c.uuid.toString().toLowerCase() ==
                 ESP_CHAR_UUID.toLowerCase()) {
-              // Read value if readable
-              if (c.properties.read) {
-                List<int> value = await c.read();
-                String result = String.fromCharCodes(value);
-                debugPrint("Read from ESP: $result");
-
-                if (mounted) {
-                  showDialog(
-                    context: context,
-                    builder:
-                        (context) => AlertDialog(
-                          title: const Text('Glucose Reading'),
-                          content: Text('Value: $result'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: const Text('OK'),
-                            ),
-                          ],
-                        ),
-                  );
-                }
-              } else {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Characteristic is not readable'),
-                  ),
-                );
-              }
-
               // Set up notifications if supported
               if (c.properties.notify) {
                 await c.setNotifyValue(true);
-                c.lastValueStream.listen((value) {
+                // Here is where data is being read
+                c.lastValueStream.listen((value) async {
                   String notification = String.fromCharCodes(value);
-                  debugPrint('Notification: $notification');
 
+                  // thank you gpt
+                  final regex = RegExp(
+                    r'ppg1:\s*([\d.]+),\s*ppg2:\s*([\d.]+),\s*ppg3\s*([\d.]+)',
+                  );
+                  final match = regex.firstMatch(notification);
+
+                  if (match != null) {
+                    final float1 = match.group(1);
+                    final float2 = match.group(2);
+                    final float3 = match.group(3);
+
+                    final csvLine = '$float1,$float2,$float3\n';
+
+                    final dir = await getTemporaryDirectory();
+                    final file = File('${dir.path}/readings.csv');
+
+                    // Append line
+                    await file.writeAsString(csvLine, mode: FileMode.append);
+
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('Saved: $csvLine')));
+                  } else {
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to parse: $notification')),
+                    );
+                  }
+
+                  /* 
+                  // Only for debug
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('New reading: $notification')),
                   );
+                  */
                 });
 
                 if (!mounted) return;

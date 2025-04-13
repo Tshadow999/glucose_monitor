@@ -30,7 +30,6 @@ class GlucoseBluetoothService with ChangeNotifier {
   factory GlucoseBluetoothService() => _instance;
   GlucoseBluetoothService._internal();
 
-  // Updating scanned devices
   final StreamController<List<ScannedDevice>> _deviceStreamController =
       StreamController<List<ScannedDevice>>.broadcast();
   Stream<List<ScannedDevice>> get deviceStream =>
@@ -38,11 +37,9 @@ class GlucoseBluetoothService with ChangeNotifier {
 
   final Map<String, ScannedDevice> _scannedDevices = {};
 
-  // Device and connection state
   BluetoothDevice? _connectedDevice;
   BluetoothDevice? get connectedDevice => _connectedDevice;
 
-  // Initialize the service
   Future<void> initialize(BuildContext context) async {
     FlutterBluePlus.setLogLevel(LogLevel.warning, color: false);
     bool permissions = await requestPermissions();
