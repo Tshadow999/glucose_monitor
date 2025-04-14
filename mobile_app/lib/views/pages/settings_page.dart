@@ -142,17 +142,18 @@ class _SettingsPageState extends State<SettingsPage> {
                   }
 
                   /*
+                  // For debugging
                   GlucoseReadingService().addReading(
                     reading,
                     now.subtract(Duration(minutes: 15 * i)),
                   );
-*/
                   NotificationService().show(
                     id: 3,
                     title: "Warning high blood sugar detected",
                     body:
                         "Your blood sugar is $reading mg/dL, consider taking action!",
                   );
+                  */
                 }
               },
               child: Text("Add data"),

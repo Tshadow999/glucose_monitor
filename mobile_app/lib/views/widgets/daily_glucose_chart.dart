@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sugar_daddy/data/glucose_bluetooth_service.dart';
 
 import 'package:sugar_daddy/data/local_storage.dart';
 import 'package:sugar_daddy/data/notification_service.dart';
@@ -46,6 +47,9 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
       if (!mounted) return;
       addNewGlucoseReading();
     });
+
+    // 
+    handleBluetooth();
   }
 
   @override
@@ -371,5 +375,11 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
     if (glucoseLevels.isEmpty) return 0;
     double sum = glucoseLevels.map((spot) => spot.y).reduce((a, b) => a + b);
     return sum / glucoseLevels.length;
+  }
+
+  handleBluetooth() {
+    GlucoseBluetoothService().glucoseReadings.listen((reading) {
+      print("Got glucose reading: ${reading.value} at ${reading.timestamp}");
+    });
   }
 }

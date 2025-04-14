@@ -1,8 +1,5 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:sugar_daddy/data/glucose_bluetooth_service.dart';
 
 class BluetoothPage extends StatefulWidget {
@@ -116,6 +113,10 @@ class _BluetoothPageState extends State<BluetoothPage> {
         _connectedDevice != null &&
         _connectedDevice!.remoteId == scan.device.remoteId;
 
+    if(isConnected) {
+      print("connected Device: ${_connectedDevice!.platformName}");
+    }
+
     // Dont list devices without a name
     if (scan.device.platformName.toString().isEmpty) return Container();
 
@@ -130,9 +131,7 @@ class _BluetoothPageState extends State<BluetoothPage> {
           color: isConnected ? Colors.blue : null,
         ),
         title: Text(
-          scan.device.platformName.toString().isNotEmpty
-              ? scan.device.platformName.toString()
-              : "---",
+          scan.device.platformName.toString(),
         ),
         subtitle: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -185,7 +184,7 @@ class _BluetoothPageState extends State<BluetoothPage> {
       );
 
       // Immediately read data after connecting
-      readDataFromDevice(device);
+      await GlucoseBluetoothService().connectToDevice(device);
     } catch (e) {
       setState(() {
         _isConnecting = false;
@@ -198,96 +197,4 @@ class _BluetoothPageState extends State<BluetoothPage> {
     }
   }
 
-  Future<void> readDataFromDevice(BluetoothDevice device) async {
-    try {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Discovering services...')));
-
-      // Discover services
-      List<BluetoothService> services = await device.discoverServices();
-      bool foundService = false;
-
-      for (BluetoothService service in services) {
-        debugPrint('Found service: ${service.uuid}');
-
-        // Check if this is our target service
-        if (service.uuid.toString().toLowerCase() ==
-            ESP_SERVICE_UUID.toLowerCase()) {
-          foundService = true;
-
-          for (BluetoothCharacteristic c in service.characteristics) {
-            // Check if this is our target characteristic
-            if (c.uuid.toString().toLowerCase() ==
-                ESP_CHAR_UUID.toLowerCase()) {
-              // Set up notifications if supported
-              if (c.properties.notify) {
-                await c.setNotifyValue(true);
-                // Here is where data is being read
-                c.lastValueStream.listen((value) async {
-                  String notification = String.fromCharCodes(value);
-
-                  // thank you gpt
-                  final regex = RegExp(
-                    r'ppg1:\s*([\d.]+),\s*ppg2:\s*([\d.]+),\s*ppg3\s*([\d.]+)',
-                  );
-                  final match = regex.firstMatch(notification);
-
-                  if (match != null) {
-                    final float1 = match.group(1);
-                    final float2 = match.group(2);
-                    final float3 = match.group(3);
-
-                    final csvLine = '$float1,$float2,$float3\n';
-
-                    final dir = await getTemporaryDirectory();
-                    final file = File('${dir.path}/readings.csv');
-
-                    // Append line
-                    await file.writeAsString(csvLine, mode: FileMode.append);
-
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('Saved: $csvLine')));
-                  } else {
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to parse: $notification')),
-                    );
-                  }
-
-                  /* 
-                  // Only for debug
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('New reading: $notification')),
-                  );
-                  */
-                });
-
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Notifications enabled')),
-                );
-              }
-            }
-          }
-        }
-      }
-
-      if (!foundService && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Target service not found on this device'),
-          ),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error reading data: $e')));
-    }
-  }
 }

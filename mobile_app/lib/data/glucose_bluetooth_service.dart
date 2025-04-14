@@ -1,22 +1,17 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:sugar_daddy/data/local_storage.dart';
 
 class ScannedDevice {
   final BluetoothDevice device;
   final int rssi;
 
   ScannedDevice({required this.device, required this.rssi});
-}
-
-class GlucoseReading {
-  final double value; // in mg/dL
-  final DateTime timestamp;
-
-  GlucoseReading({required this.value, required this.timestamp});
 }
 
 // Connecting to the esp
@@ -29,6 +24,13 @@ class GlucoseBluetoothService with ChangeNotifier {
       GlucoseBluetoothService._internal();
   factory GlucoseBluetoothService() => _instance;
   GlucoseBluetoothService._internal();
+
+  final StreamController<GlucoseReading> readingStreamController =
+    StreamController<GlucoseReading>.broadcast();
+
+Stream<GlucoseReading> get glucoseReadings => readingStreamController.stream;
+
+StreamSubscription<List<int>>? notificationSubscription;
 
   final StreamController<List<ScannedDevice>> _deviceStreamController =
       StreamController<List<ScannedDevice>>.broadcast();
@@ -111,6 +113,78 @@ class GlucoseBluetoothService with ChangeNotifier {
     FlutterBluePlus.cancelWhenScanComplete(subscription);
   }
 
+  Future<void> connectToDevice(BluetoothDevice device) async {
+    try {
+      if (_connectedDevice?.remoteId == device.remoteId) {
+        print("Already connected to this device.");
+        return;
+      }
+
+      await stopScanning();
+
+      await device.connect(timeout: const Duration(seconds: 10));
+      _connectedDevice = device;
+
+      List<BluetoothService> services = await device.discoverServices();
+
+      for (BluetoothService service in services) {
+        if (service.uuid.toString().toLowerCase() == ESP_SERVICE_UUID.toLowerCase()) {
+          for (BluetoothCharacteristic c in service.characteristics) {
+            if (c.uuid.toString().toLowerCase() == ESP_CHAR_UUID.toLowerCase()) {
+              if (c.properties.notify) {
+                await c.setNotifyValue(true);
+
+                // Cancel old subscription if exists
+                await notificationSubscription?.cancel();
+
+                notificationSubscription = c.lastValueStream.listen((value) async {
+                final notification = String.fromCharCodes(value);
+
+                final regex = RegExp(r"\s*(\d+):PD1:\s*(\d+), PD2:\s*(\d+)");
+                final match = regex.firstMatch(notification);
+
+                if (match != null && match.groupCount >= 3) {
+                  try {
+                    final timestamp = int.parse(match.group(1)!);
+                    final pd1 = int.parse(match.group(2)!);
+                    final pd2 = int.parse(match.group(3)!);
+
+                    final reading = GlucoseReading(
+                      value: pd1.toDouble(), // or pd2, depending on which you want
+                      timestamp: DateTime.fromMillisecondsSinceEpoch(timestamp),
+                    );
+
+                    readingStreamController.add(reading);
+
+                    final csvLine = '${reading.timestamp.toIso8601String()},$pd1,$pd2\n';
+                    final dir = await getTemporaryDirectory();
+                    final file = File('${dir.path}/readings.csv');
+                    await file.writeAsString(csvLine, mode: FileMode.append);
+
+                    print("Saved: $csvLine");
+                  } catch (e) {
+                    print("Failed to parse or save data: $e");
+                  }
+                } else {
+                  print("Failed to match notification: $notification");
+                }
+              });
+
+                return;
+              }
+            }
+          }
+        }
+      }
+
+      throw Exception("Target service/characteristic not found");
+
+    } catch (e) {
+      print("Connection failed: $e");
+      rethrow;
+    }
+  }
+
   Future<bool> requestPermissions() async {
     if (Platform.isAndroid) {
       Map<Permission, PermissionStatus> statuses =
@@ -125,5 +199,17 @@ class GlucoseBluetoothService with ChangeNotifier {
     }
 
     return true; // iOS handles permissions differently
+  }
+
+  Future<void> disconnect() async {
+    await notificationSubscription?.cancel();
+    notificationSubscription = null;
+
+    if (_connectedDevice != null) {
+      try {
+        await _connectedDevice!.disconnect();
+      } catch (_) {}
+      _connectedDevice = null;
+    }
   }
 }
