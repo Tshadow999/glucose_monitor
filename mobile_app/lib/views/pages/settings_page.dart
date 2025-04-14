@@ -105,14 +105,14 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               onTap: () => deleteAccount(context),
             ),
-            SizedBox(height: 16),
+            SizedBox(height: 160),
             ...listTitle("Debugging"),
             TextButton(
               onPressed: () async {
                 try {
                   List<double> predictions = await runModelFromCsv();
 
-                  if (!context.mounted) return;
+                  if (!context.mounted || predictions.isEmpty) return;
                   ScaffoldMessenger.of(
                     context,
                   ).showSnackBar(SnackBar(content: Text('AI is finished')));
@@ -141,12 +141,12 @@ class _SettingsPageState extends State<SettingsPage> {
                     reading = 120.0 + random.nextInt(10);
                   }
 
-                  /*
                   // For debugging
                   GlucoseReadingService().addReading(
                     reading,
                     now.subtract(Duration(minutes: 15 * i)),
                   );
+                  /*
                   NotificationService().show(
                     id: 3,
                     title: "Warning high blood sugar detected",

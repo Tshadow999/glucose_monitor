@@ -40,9 +40,14 @@ StreamSubscription<List<int>>? notificationSubscription;
   final Map<String, ScannedDevice> _scannedDevices = {};
 
   BluetoothDevice? _connectedDevice;
-  BluetoothDevice? get connectedDevice => _connectedDevice;
 
   Future<void> initialize(BuildContext context) async {
+
+    // We already have a device, no need to init again
+    if (_connectedDevice != null) {
+      return;
+    }
+
     FlutterBluePlus.setLogLevel(LogLevel.warning, color: false);
     bool permissions = await requestPermissions();
     if (!permissions) {
@@ -113,13 +118,12 @@ StreamSubscription<List<int>>? notificationSubscription;
     FlutterBluePlus.cancelWhenScanComplete(subscription);
   }
 
+  List<BluetoothDevice> connectedDevices() {
+    return FlutterBluePlus.connectedDevices;
+  }
+
   Future<void> connectToDevice(BluetoothDevice device) async {
     try {
-      if (_connectedDevice?.remoteId == device.remoteId) {
-        print("Already connected to this device.");
-        return;
-      }
-
       await stopScanning();
 
       await device.connect(timeout: const Duration(seconds: 10));

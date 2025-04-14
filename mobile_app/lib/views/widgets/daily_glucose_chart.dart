@@ -48,8 +48,6 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
       addNewGlucoseReading();
     });
 
-    // 
-    handleBluetooth();
   }
 
   @override
@@ -375,11 +373,5 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
     if (glucoseLevels.isEmpty) return 0;
     double sum = glucoseLevels.map((spot) => spot.y).reduce((a, b) => a + b);
     return sum / glucoseLevels.length;
-  }
-
-  handleBluetooth() {
-    GlucoseBluetoothService().glucoseReadings.listen((reading) {
-      print("Got glucose reading: ${reading.value} at ${reading.timestamp}");
-    });
   }
 }
