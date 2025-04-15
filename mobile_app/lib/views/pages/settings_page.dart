@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sugar_daddy/data/constants.dart';
+import 'package:sugar_daddy/data/glucose_bluetooth_service.dart';
 import 'package:sugar_daddy/data/local_storage.dart';
 import 'package:sugar_daddy/data/ml_model_service.dart';
 import 'package:sugar_daddy/data/notifiers.dart';
@@ -109,14 +112,16 @@ class _SettingsPageState extends State<SettingsPage> {
             TextButton(
               onPressed: () async {
                 try {
-                  List<double> predictions = await runModelFromCsv();
+                  final dir = await getTemporaryDirectory();
+                  final file = File('${dir.path}/modelData.csv');
+                  double prediction = await runModelFromCsv(file.path);
 
-                  if (!context.mounted || predictions.isEmpty) return;
+                  if (!context.mounted) return;
                   ScaffoldMessenger.of(
                     context,
                   ).showSnackBar(SnackBar(content: Text('AI is finished')));
 
-                  GlucoseReadingService().addReadings(predictions);
+                  GlucoseReadingService().addReading(prediction, DateTime.now());
                 } catch (e) {
                   ScaffoldMessenger.of(
                     context,
@@ -133,17 +138,17 @@ class _SettingsPageState extends State<SettingsPage> {
                 for (int i = 15; i > 0; i--) {
                   double reading;
                   if (i > 5) {
-                    reading = 110.0 + random.nextInt(5);
+                    reading = 80.0 + random.nextDouble() * 5;
                   } else if (i > 10) {
-                    reading = 110.0 + random.nextInt(10);
+                    reading = 80.0 + random.nextDouble() * 7.5;
                   } else {
-                    reading = 120.0 + random.nextInt(10);
+                    reading = 80.0 + random.nextDouble() * 15;
                   }
 
                   // For debugging
                   GlucoseReadingService().addReading(
                     reading,
-                    now.subtract(Duration(minutes: 15 * i)),
+                    now.subtract(Duration(minutes: 30 * i)),
                   );
                   /*
                   NotificationService().show(
@@ -156,6 +161,13 @@ class _SettingsPageState extends State<SettingsPage> {
                 }
               },
               child: Text("Add data"),
+            ),
+            SizedBox(height: 16),
+            TextButton(
+              onPressed: () async {
+                await GlucoseBluetoothService().combineFiles(context);
+              },
+              child: Text("Check data size"),
             ),
             SizedBox(height: 16),
             TextButton(

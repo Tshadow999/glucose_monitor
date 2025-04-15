@@ -175,16 +175,12 @@ class _BluetoothPageState extends State<BluetoothPage> {
     }
   }
 
-  bool _once = false;
-
   Widget showAvailableDeviceTile(ScannedDevice scan, BuildContext context) {
     bool isConnected = _connectedDevice?.remoteId == scan.device.remoteId;
 
     if (scan.device.platformName.toString().isEmpty) return Container();
 
-    if (_connectedDevice != null && !_once) {
-      _once = true;
-
+    if (isConnected) {
       return Card(
         color: Theme.of(context).colorScheme.onPrimary,
         child: ListTile(
@@ -277,12 +273,12 @@ class _BluetoothPageState extends State<BluetoothPage> {
           // Immediately read data after connecting
           GlucoseBluetoothService().connectToDevice(device);
         } else if (state == BluetoothConnectionState.disconnected) {
+          if (!mounted) return;
           setState(() {
             _connectedDevice = null;
             _isConnecting = false;
           });
 
-          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Disconnected from ${device.platformName}')),
           );

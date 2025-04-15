@@ -1,35 +1,27 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:path_provider/path_provider.dart';
 
 // run this
-Future<List<double>> runModelFromCsv() async {
+Future<double> runModelFromCsv(String path) async {
   // print("----- STARTING AI -----");
   try {
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/readings.csv');
-    String? path; // file.path;
     List<List<double>> inputData = await MlModelService().loadCsvData(path);
 
     if (inputData.isEmpty) {
       debugPrint("No valid input data found!");
-      return [];
+      return -1.0;
     }
 
     // print("Processing ${inputData.length} input segments");
-    List<double> predictions = [];
+    double predictions = -1.0;
 
     for (var input in inputData) {
       try {
-        double result = await MlModelService().runModelPrediction(input);
-        // print('Prediction: $result');
-        predictions.add(result); // Store the result
+        predictions = await MlModelService().runModelPrediction(input);
       } catch (e) {
         debugPrint('Error processing segment: $e');
-        // Continue with next segment rather than failing entire batch
       }
     }
 
@@ -91,7 +83,7 @@ class MlModelService {
   Future<double> runModelPrediction(List<double> inputData) async {
     // to run this server:
     // source ~/myenv/bin/activate
-    // cd ~/code/glucose_monitor/fastAPI
+    // cd /glucose_monitor/fastAPI
     // uvicorn server:app --host 0.0.0.0 --port 8000
     const String apiUrl = "http://145.126.35.126:8000/predict/";
     final headers = {'Content-Type': 'application/json'};

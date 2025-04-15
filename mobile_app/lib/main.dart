@@ -65,12 +65,7 @@ class _MyAppState extends State<MyApp> {
           title: 'Continuous Glucose Monitoring App',
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(
-              seedColor: Color.from(
-                red: 0.67,
-                green: 0.51,
-                blue: 0.8,
-                alpha: 1.0,
-              ),
+              seedColor: Color.from(alpha: 1, red: 0.671, green: 0.51, blue: 0.8),
               brightness: isDarkMode ? Brightness.dark : Brightness.light,
             ),
           ),

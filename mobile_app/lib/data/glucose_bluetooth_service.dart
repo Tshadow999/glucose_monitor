@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:sugar_daddy/data/local_storage.dart';
+import 'package:sugar_daddy/data/ml_model_service.dart';
 
 class ScannedDevice {
   final BluetoothDevice device;
@@ -129,46 +130,60 @@ class GlucoseBluetoothService with ChangeNotifier {
       _connectedDevice = device;
 
       List<BluetoothService> services = await device.discoverServices();
-
       for (BluetoothService service in services) {
-        if (service.uuid.toString().toLowerCase() ==
-            ESP_SERVICE_UUID.toLowerCase()) {
+        if (service.uuid.toString().toLowerCase() == ESP_SERVICE_UUID.toLowerCase()) {
           for (BluetoothCharacteristic c in service.characteristics) {
-            if (c.uuid.toString().toLowerCase() ==
-                ESP_CHAR_UUID.toLowerCase()) {
+            if (c.uuid.toString().toLowerCase() == ESP_CHAR_UUID.toLowerCase()) {
+
               if (c.properties.notify) {
                 await c.setNotifyValue(true);
-
-                // Cancel old subscription if exists
                 await notificationSubscription?.cancel();
 
-                notificationSubscription = c.lastValueStream.listen((
-                  value,
-                ) async {
-                  final notification = String.fromCharCodes(value);
+                notificationSubscription = c.lastValueStream.listen((value) async {
+                  final notification = String.fromCharCodes(value).trim();
+                  debugPrint("Received: $notification");
 
-                final regex = RegExp(r"PD1:\s*(\d+),\s*PD2:\s*(\d+),\s*PD3:\s*(\d+)");
-                final match = regex.firstMatch(notification);
-
-                if (match != null && match.groupCount >= 3) {
                   try {
-                    final pd1 = int.parse(match.group(1)!);
-                    final pd2 = int.parse(match.group(2)!);
-                    final pd3 = int.parse(match.group(3)!);
+                    final regexes = {
+                      'PD1': RegExp(r"PD1:(\d+)"),
+                      'PD2': RegExp(r"PD2:(\d+)"),
+                      'PD3': RegExp(r"PD3:(\d+)"),
+                    };
 
-                    final csvLine = '$pd1, $pd2, $pd3\n';
-                    final dir = await getTemporaryDirectory();
-                    final file = File('${dir.path}/readings.csv');
-                    await file.writeAsString(csvLine, mode: FileMode.append);
+                    // Read 1 at a time
+                    for (final entry in regexes.entries) {
+                      final match = entry.value.firstMatch(notification);
+                      if (match != null && match.groupCount >= 1) {
+                        final int value = int.parse(match.group(1)!);
+                        final fileName = 'readings_${entry.key.toLowerCase()}.csv';
+                        final dir = await getTemporaryDirectory();
+                        final file = File('${dir.path}/$fileName');
 
-                    debugPrint("Saved: $csvLine");
+                        // Count existing lines
+                        final exists = await file.exists();
+                        int lineCount = 0;
+                        if (exists) {
+                          lineCount = await file.readAsLines().then((lines) => lines.length);
+                        }
+
+                        if (lineCount < 120) {
+                          await file.writeAsString('$value\n', mode: FileMode.append);
+                          // debugPrint("Saved ${entry.key}: $value to $fileName ($lineCount/120)");
+                        } else {
+                          bool readyforAI = await areAllFilesFull();
+                          if(readyforAI) {
+                            // combine the files,
+                            await combineFiles(null);
+                          }
+                        }
+
+                        break; // Exit after handling the first match
+                      }
+                    }
                   } catch (e) {
-                    debugPrint("Failed to parse or save data: $e");
+                    debugPrint("Error while parsing/saving: $e");
                   }
-                } else {
-                  debugPrint("Failed to match notification: $notification");
-                }
-              });
+                });
 
                 return;
               }
@@ -176,7 +191,6 @@ class GlucoseBluetoothService with ChangeNotifier {
           }
         }
       }
-
       throw Exception("Target service/characteristic not found");
     } catch (e) {
       debugPrint("Connection failed: $e");
@@ -210,5 +224,79 @@ class GlucoseBluetoothService with ChangeNotifier {
       } catch (_) {}
       _connectedDevice = null;
     }
+  }
+
+  Future<void> combineFiles(BuildContext? context) async { 
+    final dir = await getTemporaryDirectory();
+    final file1 = File('${dir.path}/readings_pd1.csv');
+    final file2 = File('${dir.path}/readings_pd2.csv');
+    final file3 = File('${dir.path}/readings_pd3.csv');
+
+    final lines1 = await file1.readAsLines();
+    final lines2 = await file2.readAsLines();
+    final lines3 = await file3.readAsLines();
+
+    if (lines1.length == 120 && lines2.length == 120 && lines3.length == 120) {
+      final combinedFile = File('${dir.path}/modelData.csv');
+      final sink = combinedFile.openWrite();
+
+      for (int i = 0; i < 120; i++) {
+        final ppg1 = lines1[i].trim();
+        final ppg2 = lines2[i].trim();
+        final ppg3 = lines3[i].trim();
+        sink.writeln('$ppg1, $ppg2, $ppg3');
+      }
+
+      await sink.close();
+
+      runModelFromCsv(combinedFile.path);
+
+    } else {
+      if(context != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Lengths: ${lines1.length} ${lines2.length} ${lines3.length}")),
+        );
+      }
+    }
+
+  }
+
+  Future<void> clearPpgData() async {    
+    final dir = await getTemporaryDirectory();
+    final file1 = File('${dir.path}/readings_pd1.csv');
+    final file2 = File('${dir.path}/readings_pd2.csv');
+    final file3 = File('${dir.path}/readings_pd3.csv');
+    
+    await file1.writeAsString('');
+    await file2.writeAsString('');
+    await file3.writeAsString('');
+
+    final combinedFile = File('${dir.path}/modelData.csv');
+    await combinedFile.writeAsString('');
+  }
+
+  Future<bool> areAllFilesFull() async {
+    final dir = await getTemporaryDirectory();
+
+    final fileNames = ['readings_pd1.csv', 'readings_pd2.csv', 'readings_pd3.csv'];
+
+    for (final fileName in fileNames) {
+      final file = File('${dir.path}/$fileName');
+
+      if (!await file.exists()) {
+        debugPrint('$fileName does not exist yet');
+        return false;
+      }
+
+      final lines = await file.readAsLines();
+
+      // print("---------------LINES: ${lines.length}");
+      if (lines.length < 120) {
+        // debugPrint('$fileName has only ${lines.length} lines');
+        return false;
+      }
+    }
+
+    return true;
   }
 }
