@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "93357929207",
+    "project_id": "sugardaddy-743c4",
+    "storage_bucket": "sugardaddy-743c4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:93357929207:android:ec389aedd43de3ebb019f2",
+        "android_client_info": {
+          "package_name": "com.example.mobile_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBK15XBqNgPaJDdDRXFawpKwUaRP5GUd2M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:93357929207:android:ca2cce88b0034e0bb019f2",
+        "android_client_info": {
+          "package_name": "com.example.sugar_daddy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBK15XBqNgPaJDdDRXFawpKwUaRP5GUd2M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,302 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:sugar_daddy/data/local_storage.dart';
+import 'package:sugar_daddy/data/ml_model_service.dart';
+
+class ScannedDevice {
+  final BluetoothDevice device;
+  final int rssi;
+
+  ScannedDevice({required this.device, required this.rssi});
+}
+
+// Connecting to the esp
+final String ESP_SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+final String ESP_CHAR_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+
+class GlucoseBluetoothService with ChangeNotifier {
+  // Singleton pattern
+  static final GlucoseBluetoothService _instance =
+      GlucoseBluetoothService._internal();
+  factory GlucoseBluetoothService() => _instance;
+  GlucoseBluetoothService._internal();
+
+  final StreamController<GlucoseReading> readingStreamController =
+      StreamController<GlucoseReading>.broadcast();
+
+  Stream<GlucoseReading> get glucoseReadings => readingStreamController.stream;
+
+  StreamSubscription<List<int>>? notificationSubscription;
+
+  final StreamController<List<ScannedDevice>> _deviceStreamController =
+      StreamController<List<ScannedDevice>>.broadcast();
+  Stream<List<ScannedDevice>> get deviceStream =>
+      _deviceStreamController.stream;
+
+  final Map<String, ScannedDevice> _scannedDevices = {};
+
+  BluetoothDevice? _connectedDevice;
+
+  Future<void> initialize(BuildContext context) async {
+    // We already have a device, no need to init again
+    if (_connectedDevice != null) {
+      return;
+    }
+
+    FlutterBluePlus.setLogLevel(LogLevel.warning, color: false);
+    bool permissions = await requestPermissions();
+    if (!permissions) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Bluetooth permissions are required")),
+        );
+      }
+      return;
+    }
+
+    var subscription = FlutterBluePlus.adapterState.listen((
+      BluetoothAdapterState state,
+    ) {
+      if (state == BluetoothAdapterState.on) {
+        //yay
+      } else {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Bluetooth state is ${state.toString().split(".").last}",
+            ),
+          ),
+        );
+      }
+    });
+
+    subscription.cancel();
+  }
+
+  Future<void> stopScanning() async {
+    FlutterBluePlus.stopScan();
+    await Future.delayed(Duration(seconds: 1));
+  }
+
+  Future<void> scanDevices(
+    BuildContext context, {
+    int timeoutSeconds = 10,
+  }) async {
+    _scannedDevices.clear();
+
+    await FlutterBluePlus.startScan(timeout: Duration(seconds: timeoutSeconds));
+
+    var subscription = FlutterBluePlus.onScanResults.listen(
+      (results) {
+        if (results.isNotEmpty) {
+          for (ScanResult r in results) {
+            final id = r.device.remoteId.str;
+            _scannedDevices[id] = ScannedDevice(device: r.device, rssi: r.rssi);
+          }
+        }
+
+        final sortedDevices =
+            _scannedDevices.values.toList()
+              ..sort((a, b) => b.rssi.compareTo(a.rssi));
+
+        _deviceStreamController.add(sortedDevices);
+      },
+      onError: (e) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
+      },
+    );
+
+    FlutterBluePlus.cancelWhenScanComplete(subscription);
+  }
+
+  List<BluetoothDevice> connectedDevices() {
+    return FlutterBluePlus.connectedDevices;
+  }
+
+  Future<void> connectToDevice(BluetoothDevice device) async {
+    try {
+      await stopScanning();
+
+      await device.connect(timeout: const Duration(seconds: 10));
+      _connectedDevice = device;
+
+      List<BluetoothService> services = await device.discoverServices();
+      for (BluetoothService service in services) {
+        if (service.uuid.toString().toLowerCase() == ESP_SERVICE_UUID.toLowerCase()) {
+          for (BluetoothCharacteristic c in service.characteristics) {
+            if (c.uuid.toString().toLowerCase() == ESP_CHAR_UUID.toLowerCase()) {
+
+              if (c.properties.notify) {
+                await c.setNotifyValue(true);
+                await notificationSubscription?.cancel();
+
+                notificationSubscription = c.lastValueStream.listen((value) async {
+                  final notification = String.fromCharCodes(value).trim();
+                  debugPrint("Received: $notification");
+
+                  try {
+                    final regexes = {
+                      'PD1': RegExp(r"PD1:(\d+)"),
+                      'PD2': RegExp(r"PD2:(\d+)"),
+                      'PD3': RegExp(r"PD3:(\d+)"),
+                    };
+
+                    // Read 1 at a time
+                    for (final entry in regexes.entries) {
+                      final match = entry.value.firstMatch(notification);
+                      if (match != null && match.groupCount >= 1) {
+                        final int value = int.parse(match.group(1)!);
+                        final fileName = 'readings_${entry.key.toLowerCase()}.csv';
+                        final dir = await getTemporaryDirectory();
+                        final file = File('${dir.path}/$fileName');
+
+                        // Count existing lines
+                        final exists = await file.exists();
+                        int lineCount = 0;
+                        if (exists) {
+                          lineCount = await file.readAsLines().then((lines) => lines.length);
+                        }
+
+                        if (lineCount < 120) {
+                          await file.writeAsString('$value\n', mode: FileMode.append);
+                          // debugPrint("Saved ${entry.key}: $value to $fileName ($lineCount/120)");
+                        } else {
+                          bool readyforAI = await areAllFilesFull();
+                          if(readyforAI) {
+                            // combine the files,
+                            await combineFiles(null);
+                          }
+                        }
+
+                        break; // Exit after handling the first match
+                      }
+                    }
+                  } catch (e) {
+                    debugPrint("Error while parsing/saving: $e");
+                  }
+                });
+
+                return;
+              }
+            }
+          }
+        }
+      }
+      throw Exception("Target service/characteristic not found");
+    } catch (e) {
+      debugPrint("Connection failed: $e");
+      rethrow;
+    }
+  }
+
+  Future<bool> requestPermissions() async {
+    if (Platform.isAndroid) {
+      Map<Permission, PermissionStatus> statuses =
+          await [
+            Permission.bluetooth,
+            Permission.bluetoothScan,
+            Permission.bluetoothConnect,
+            Permission.location,
+          ].request();
+
+      return statuses.values.every((status) => status.isGranted);
+    }
+
+    return true; // iOS handles permissions differently
+  }
+
+  Future<void> disconnect() async {
+    await notificationSubscription?.cancel();
+    notificationSubscription = null;
+
+    if (_connectedDevice != null) {
+      try {
+        await _connectedDevice!.disconnect();
+      } catch (_) {}
+      _connectedDevice = null;
+    }
+  }
+
+  Future<void> combineFiles(BuildContext? context) async { 
+    final dir = await getTemporaryDirectory();
+    final file1 = File('${dir.path}/readings_pd1.csv');
+    final file2 = File('${dir.path}/readings_pd2.csv');
+    final file3 = File('${dir.path}/readings_pd3.csv');
+
+    final lines1 = await file1.readAsLines();
+    final lines2 = await file2.readAsLines();
+    final lines3 = await file3.readAsLines();
+
+    if (lines1.length == 120 && lines2.length == 120 && lines3.length == 120) {
+      final combinedFile = File('${dir.path}/modelData.csv');
+      final sink = combinedFile.openWrite();
+
+      for (int i = 0; i < 120; i++) {
+        final ppg1 = lines1[i].trim();
+        final ppg2 = lines2[i].trim();
+        final ppg3 = lines3[i].trim();
+        sink.writeln('$ppg1, $ppg2, $ppg3');
+      }
+
+      await sink.close();
+
+      runModelFromCsv(combinedFile.path);
+
+    } else {
+      if(context != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Lengths: ${lines1.length} ${lines2.length} ${lines3.length}")),
+        );
+      }
+    }
+
+  }
+
+  Future<void> clearPpgData() async {    
+    final dir = await getTemporaryDirectory();
+    final file1 = File('${dir.path}/readings_pd1.csv');
+    final file2 = File('${dir.path}/readings_pd2.csv');
+    final file3 = File('${dir.path}/readings_pd3.csv');
+    
+    await file1.writeAsString('');
+    await file2.writeAsString('');
+    await file3.writeAsString('');
+
+    final combinedFile = File('${dir.path}/modelData.csv');
+    await combinedFile.writeAsString('');
+  }
+
+  Future<bool> areAllFilesFull() async {
+    final dir = await getTemporaryDirectory();
+
+    final fileNames = ['readings_pd1.csv', 'readings_pd2.csv', 'readings_pd3.csv'];
+
+    for (final fileName in fileNames) {
+      final file = File('${dir.path}/$fileName');
+
+      if (!await file.exists()) {
+        debugPrint('$fileName does not exist yet');
+        return false;
+      }
+
+      final lines = await file.readAsLines();
+
+      // print("---------------LINES: ${lines.length}");
+      if (lines.length < 120) {
+        // debugPrint('$fileName has only ${lines.length} lines');
+        return false;
+      }
+    }
+
+    return true;
+  }
+}
