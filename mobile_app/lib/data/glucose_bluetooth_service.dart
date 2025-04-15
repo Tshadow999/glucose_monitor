@@ -144,23 +144,16 @@ StreamSubscription<List<int>>? notificationSubscription;
                 notificationSubscription = c.lastValueStream.listen((value) async {
                 final notification = String.fromCharCodes(value);
 
-                final regex = RegExp(r"\s*(\d+):PD1:\s*(\d+), PD2:\s*(\d+)");
+                final regex = RegExp(r"PD1:\s*(\d+),\s*PD2:\s*(\d+),\s*PD3:\s*(\d+)");
                 final match = regex.firstMatch(notification);
 
                 if (match != null && match.groupCount >= 3) {
                   try {
-                    final timestamp = int.parse(match.group(1)!);
-                    final pd1 = int.parse(match.group(2)!);
-                    final pd2 = int.parse(match.group(3)!);
+                    final pd1 = int.parse(match.group(1)!);
+                    final pd2 = int.parse(match.group(2)!);
+                    final pd3 = int.parse(match.group(3)!);
 
-                    final reading = GlucoseReading(
-                      value: pd1.toDouble(), // or pd2, depending on which you want
-                      timestamp: DateTime.fromMillisecondsSinceEpoch(timestamp),
-                    );
-
-                    readingStreamController.add(reading);
-
-                    final csvLine = '${reading.timestamp.toIso8601String()},$pd1,$pd2\n';
+                    final csvLine = '$pd1, $pd2, $pd3\n';
                     final dir = await getTemporaryDirectory();
                     final file = File('${dir.path}/readings.csv');
                     await file.writeAsString(csvLine, mode: FileMode.append);
