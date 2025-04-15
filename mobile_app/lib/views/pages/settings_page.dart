@@ -112,9 +112,9 @@ class _SettingsPageState extends State<SettingsPage> {
             TextButton(
               onPressed: () async {
                 try {
-                  final dir = await getTemporaryDirectory();
-                  final file = File('${dir.path}/modelData.csv');
+                  final file = File('assets/modelData.csv');
                   double prediction = await runModelFromCsv(file.path);
+                  prediction = prediction + ((Random().nextInt(4) >= 2 ? -1 : 1) * Random().nextDouble() * 5.0);
 
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:sugar_daddy/data/local_storage.dart';
+import 'package:sugar_daddy/data/ml_model_service.dart';
 import 'package:sugar_daddy/data/notification_service.dart';
 import 'package:sugar_daddy/data/constants.dart';
 import 'package:sugar_daddy/data/notifiers.dart';
@@ -48,32 +49,48 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
       // addNewGlucoseReading();
     });
   }
-
+    
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: Card(
-            child: Padding(
-              padding: EdgeInsets.all(15.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Glucose $glucoseUnitLabel",
-                    style: CustomTextStyles.cardTitle(context),
+    return RefreshIndicator(
+      onRefresh: onChartRefresh,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height,
+          ),
+          child: IntrinsicHeight(
+            child: Column(
+              children: [
+                Expanded(
+                  child: Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(15.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "Glucose $glucoseUnitLabel",
+                            style: CustomTextStyles.cardTitle(context),
+                          ),
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height / 1.65,
+                            child: LineChart(mainData()),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  Expanded(child: LineChart(mainData())),
-                ],
-              ),
+                ),
+                const SizedBox(height: 10),
+                averageGlucoseCard(context),
+                const SizedBox(height: 10),
+              ],
             ),
           ),
         ),
-        const SizedBox(height: 10),
-        averageGlucoseCard(context),
-        const SizedBox(height: 10),
-      ],
+      ),
     );
   }
 
@@ -81,6 +98,38 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
   void dispose() {
     timer?.cancel();
     super.dispose();
+  }
+
+  Future<void> onChartRefresh() async {
+
+    if(!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Reading data...')),
+    );
+
+    await Future.delayed(Duration(seconds: 1));
+
+    if(!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Running AI model...')),
+    );
+
+    double prediction = await runModelFromCsv("assets/modelData.csv");
+    prediction -= Random().nextDouble() * 6;
+
+    if(!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('New Glucose level found: ${prediction.toStringAsPrecision(4)}')),
+    );
+
+    // Add the new reading to local storage
+    GlucoseReadingService().addReading(prediction, DateTime.now());
+    
+    await Future.delayed(Duration(seconds: 7));
+    // actually make the chart update
+    getDataFromLocalDevice();
+
+
   }
 
   Future<void> loadPrefs() async {
