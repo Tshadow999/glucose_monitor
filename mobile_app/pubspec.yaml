@@ -41,7 +41,6 @@ dependencies:
   flutter_blue_plus: ^1.35.3
   hive: ^2.2.3
   hive_flutter: ^1.1.0
-  tflite_v2: ^1.0.0
   path_provider: ^2.1.5
 
 dev_dependencies:

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_provider/path_provider.dart';
@@ -10,11 +11,11 @@ Future<List<double>> runModelFromCsv() async {
   try {
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/readings.csv');
-    String? path = null; // file.path;
+    String? path; // file.path;
     List<List<double>> inputData = await MlModelService().loadCsvData(path);
 
     if (inputData.isEmpty) {
-      print("No valid input data found!");
+      debugPrint("No valid input data found!");
       return [];
     }
 
@@ -27,7 +28,7 @@ Future<List<double>> runModelFromCsv() async {
         // print('Prediction: $result');
         predictions.add(result); // Store the result
       } catch (e) {
-        print('Error processing segment: $e');
+        debugPrint('Error processing segment: $e');
         // Continue with next segment rather than failing entire batch
       }
     }
@@ -73,9 +74,11 @@ class MlModelService {
           data.add(values);
         } else if (values.length > 120) {
           data.add(values.sublist(0, 120));
-          print("Truncated row from ${values.length} to 120 values");
+          debugPrint("Truncated row from ${values.length} to 120 values");
         } else {
-          print("Skipping invalid row: ${values.length} values (expected 120)");
+          debugPrint(
+            "Skipping invalid row: ${values.length} values (expected 120)",
+          );
         }
       }
 
@@ -109,7 +112,7 @@ class MlModelService {
         return prediction;
       } else {
         // Handle unsuccessful response
-        print(
+        debugPrint(
           'Error: Failed to get prediction, Status Code: ${response.statusCode}',
         );
         return -1.0;

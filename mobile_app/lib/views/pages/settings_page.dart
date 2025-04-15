@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:sugar_daddy/data/constants.dart';
 import 'package:sugar_daddy/data/local_storage.dart';
 import 'package:sugar_daddy/data/ml_model_service.dart';
-import 'package:sugar_daddy/data/notification_service.dart';
 import 'package:sugar_daddy/data/notifiers.dart';
 import 'package:sugar_daddy/views/pages/login_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
