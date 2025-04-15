@@ -4,7 +4,6 @@ import 'dart:math';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:sugar_daddy/data/constants.dart';
 import 'package:sugar_daddy/data/glucose_bluetooth_service.dart';
 import 'package:sugar_daddy/data/local_storage.dart';

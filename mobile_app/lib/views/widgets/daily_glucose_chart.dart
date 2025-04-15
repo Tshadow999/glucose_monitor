@@ -19,7 +19,6 @@ class DailyGlucoseChart extends StatefulWidget {
 }
 
 class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
-  bool showAvg = false;
   List<FlSpot> glucoseLevels = [];
 
   Timer? timer;
@@ -124,12 +123,12 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
 
     // Add the new reading to local storage
     GlucoseReadingService().addReading(prediction, DateTime.now());
+
+    checkThresholdAndNotify(prediction);
     
     await Future.delayed(Duration(seconds: 7));
     // actually make the chart update
     getDataFromLocalDevice();
-
-
   }
 
   Future<void> loadPrefs() async {
