@@ -10,11 +10,11 @@ class InputData(BaseModel):
     input: list[float]
 
 # Load your TensorFlow Lite model
-interpreter = tf.lite.Interpreter(model_path="../mobile_app/assets/model.tflite")
+interpreter = tf.lite.Interpreter(model_path="model.tflite")
 interpreter.allocate_tensors()
 
 def predict(input_data):
-    input_array = np.array(input_data, dtype=np.float32).reshape(3, 120, 1)
+    input_array = np.array(input_data, dtype=np.float32).reshape(1, 120, 3)
     
     input_details = interpreter.get_input_details()
 

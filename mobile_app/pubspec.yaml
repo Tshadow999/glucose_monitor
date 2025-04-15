@@ -56,6 +56,5 @@ flutter:
 
   assets:
     - assets/images/
-    - assets/model.tflite
     - assets/modelData.csv
     

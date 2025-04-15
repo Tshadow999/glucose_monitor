@@ -89,6 +89,10 @@ class MlModelService {
   }
 
   Future<double> runModelPrediction(List<double> inputData) async {
+    // to run this server:
+    // source ~/myenv/bin/activate
+    // cd ~/code/glucose_monitor/fastAPI
+    // uvicorn server:app --host 0.0.0.0 --port 8000
     const String apiUrl = "http://145.126.35.126:8000/predict/";
     final headers = {'Content-Type': 'application/json'};
     double prediction = -1.0;

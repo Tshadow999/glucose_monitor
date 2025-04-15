@@ -42,9 +42,10 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
     super.initState();
     getDataFromLocalDevice();
     loadPrefs();
+    // debugging
     timer = Timer.periodic(const Duration(minutes: 5), (timer) {
       if (!mounted) return;
-      addNewGlucoseReading();
+      // addNewGlucoseReading();
     });
   }
 
@@ -121,6 +122,7 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
     });
   }
 
+/*
   void addNewGlucoseReading() {
     DateTime now = DateTime.now();
     setState(() {
@@ -143,7 +145,7 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
       }
     });
   }
-
+*/
   void checkThresholdAndNotify(double glucoseValue) {
     if (glucoseValue < lowThreshold) {
       NotificationService().show(
