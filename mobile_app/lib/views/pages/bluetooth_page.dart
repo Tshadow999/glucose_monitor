@@ -8,6 +8,7 @@ class BluetoothPage extends StatefulWidget {
   @override
   State<BluetoothPage> createState() => _BluetoothPageState();
 }
+
 class _BluetoothPageState extends State<BluetoothPage> {
   bool isBluetoothOn = false;
   BluetoothDevice? _connectedDevice;
@@ -32,7 +33,6 @@ class _BluetoothPageState extends State<BluetoothPage> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return isBluetoothOn ? deviceList() : bluetoothButton();
@@ -52,11 +52,16 @@ class _BluetoothPageState extends State<BluetoothPage> {
               return Center(child: Text('Error: ${snapshot.error}'));
             } else if (snapshot.hasData && snapshot.data != null) {
               List<ScannedDevice> devices = snapshot.data!;
-                            
+
               // Ensure connected device is always shown at the top, even if not in scan results
               if (_connectedDevice != null &&
-                  !devices.any((d) => d.device.remoteId == _connectedDevice!.remoteId)) {
-                  devices.insert(0, ScannedDevice(device: _connectedDevice!, rssi: 0));
+                  !devices.any(
+                    (d) => d.device.remoteId == _connectedDevice!.remoteId,
+                  )) {
+                devices.insert(
+                  0,
+                  ScannedDevice(device: _connectedDevice!, rssi: 0),
+                );
               }
 
               return ListView.builder(
@@ -95,23 +100,23 @@ class _BluetoothPageState extends State<BluetoothPage> {
     );
   }
 
-void checkBluetoothState() {
-  FlutterBluePlus.adapterState.listen((BluetoothAdapterState state) {
-    setState(() {
-      isBluetoothOn = state == BluetoothAdapterState.on;
-    });
-    if (isBluetoothOn) {
-      _checkAlreadyConnectedDevice();
-      if (!_isScanning) {
-        refreshScan(); 
+  void checkBluetoothState() {
+    FlutterBluePlus.adapterState.listen((BluetoothAdapterState state) {
+      setState(() {
+        isBluetoothOn = state == BluetoothAdapterState.on;
+      });
+      if (isBluetoothOn) {
+        _checkAlreadyConnectedDevice();
+        if (!_isScanning) {
+          refreshScan();
+        }
       }
-    }
-  });
-}
+    });
+  }
 
   void initBluetooth() async {
     // No need to init if already have a connection
-    if(_connectedDevice != null) {
+    if (_connectedDevice != null) {
       _isConnecting = false;
       _isScanning = false;
       isBluetoothOn = true;
@@ -120,12 +125,12 @@ void checkBluetoothState() {
 
     // needs to happen
     await Future.delayed(Duration(seconds: 1));
+
+    if (!mounted) return;
     await GlucoseBluetoothService().initialize(context);
 
-
-
     // Start scanning for devices if no device is connected.
-    if (_connectedDevice == null && isBluetoothOn) {
+    if (_connectedDevice == null && isBluetoothOn && mounted) {
       await GlucoseBluetoothService().scanDevices(context);
       setState(() {
         _isScanning = true;
@@ -134,21 +139,22 @@ void checkBluetoothState() {
   }
 
   void _checkAlreadyConnectedDevice() async {
-  List<BluetoothDevice> connectedDevices = GlucoseBluetoothService().connectedDevices();
-  if (connectedDevices.isNotEmpty) {
-    BluetoothDevice device = connectedDevices.first;
+    List<BluetoothDevice> connectedDevices =
+        GlucoseBluetoothService().connectedDevices();
+    if (connectedDevices.isNotEmpty) {
+      BluetoothDevice device = connectedDevices.first;
 
-    setState(() {
-      _connectedDevice = device;
-    });
+      setState(() {
+        _connectedDevice = device;
+      });
 
-    // Only connect if not already connected
-    final connectionState = await device.connectionState.first;
-    if (connectionState != BluetoothConnectionState.connected) {
-      await GlucoseBluetoothService().connectToDevice(device);
+      // Only connect if not already connected
+      final connectionState = await device.connectionState.first;
+      if (connectionState != BluetoothConnectionState.connected) {
+        await GlucoseBluetoothService().connectToDevice(device);
+      }
     }
   }
-}
 
   Future<void> turnBluetoothOn() async {
     try {
@@ -176,19 +182,14 @@ void checkBluetoothState() {
 
     if (scan.device.platformName.toString().isEmpty) return Container();
 
-    if(_connectedDevice != null && !_once) {
+    if (_connectedDevice != null && !_once) {
       _once = true;
 
       return Card(
         color: Theme.of(context).colorScheme.onPrimary,
         child: ListTile(
-          leading: Icon(
-            Icons.bluetooth_connected,
-            color: Colors.blue,
-          ),
-          title: Text(
-            scan.device.platformName.toString(),
-          ),
+          leading: Icon(Icons.bluetooth_connected, color: Colors.blue),
+          title: Text(scan.device.platformName.toString()),
           subtitle: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -203,18 +204,12 @@ void checkBluetoothState() {
           },
         ),
       );
-    }
-    else {
+    } else {
       return Card(
         color: Theme.of(context).colorScheme.surfaceContainer,
         child: ListTile(
-          leading: Icon(
-            Icons.bluetooth,
-            color: null,
-          ),
-          title: Text(
-            scan.device.platformName.toString(),
-          ),
+          leading: Icon(Icons.bluetooth, color: null),
+          title: Text(scan.device.platformName.toString()),
           subtitle: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -232,28 +227,28 @@ void checkBluetoothState() {
     }
   }
 
- Future<void> refreshScan() async {
-  if (!isBluetoothOn) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please turn on Bluetooth first')),
-    );
-    return;
-  }
+  Future<void> refreshScan() async {
+    if (!isBluetoothOn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please turn on Bluetooth first')),
+      );
+      return;
+    }
 
-  if (_isScanning) {
-    await GlucoseBluetoothService().stopScanning();
+    if (_isScanning) {
+      await GlucoseBluetoothService().stopScanning();
+      setState(() {
+        _isScanning = false;
+      });
+    }
+
+    if (!mounted) return;
+
+    await GlucoseBluetoothService().scanDevices(context);
     setState(() {
-      _isScanning = false;
+      _isScanning = true;
     });
   }
-
-  if (!mounted) return;
-
-  await GlucoseBluetoothService().scanDevices(context);
-  setState(() {
-    _isScanning = true; 
-  });
-}
 
   Future<void> handleDeviceTileTap(BluetoothDevice device) async {
     try {
@@ -271,8 +266,10 @@ void checkBluetoothState() {
         if (state == BluetoothConnectionState.connected) {
           setState(() {
             _connectedDevice = device;
-            _isConnecting = false; // Connection established
+            _isConnecting = false;
           });
+
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Connected to ${device.platformName}')),
           );
@@ -282,8 +279,10 @@ void checkBluetoothState() {
         } else if (state == BluetoothConnectionState.disconnected) {
           setState(() {
             _connectedDevice = null;
-            _isConnecting = false; // Connection lost
+            _isConnecting = false;
           });
+
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Disconnected from ${device.platformName}')),
           );
@@ -294,9 +293,9 @@ void checkBluetoothState() {
       setState(() {
         _isConnecting = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Connection failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Connection failed: $e')));
     }
   }
 }

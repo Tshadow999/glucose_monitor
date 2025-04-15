@@ -10,7 +10,6 @@ class DatabaseService {
         .get()
         .then(
           (snapshot) => snapshot.docs.forEach((document) {
-            // print(document.reference.id);
             docIDs.add(document.reference.id);
           }),
         );

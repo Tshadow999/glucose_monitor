@@ -26,11 +26,11 @@ class GlucoseBluetoothService with ChangeNotifier {
   GlucoseBluetoothService._internal();
 
   final StreamController<GlucoseReading> readingStreamController =
-    StreamController<GlucoseReading>.broadcast();
+      StreamController<GlucoseReading>.broadcast();
 
-Stream<GlucoseReading> get glucoseReadings => readingStreamController.stream;
+  Stream<GlucoseReading> get glucoseReadings => readingStreamController.stream;
 
-StreamSubscription<List<int>>? notificationSubscription;
+  StreamSubscription<List<int>>? notificationSubscription;
 
   final StreamController<List<ScannedDevice>> _deviceStreamController =
       StreamController<List<ScannedDevice>>.broadcast();
@@ -42,7 +42,6 @@ StreamSubscription<List<int>>? notificationSubscription;
   BluetoothDevice? _connectedDevice;
 
   Future<void> initialize(BuildContext context) async {
-
     // We already have a device, no need to init again
     if (_connectedDevice != null) {
       return;
@@ -132,17 +131,21 @@ StreamSubscription<List<int>>? notificationSubscription;
       List<BluetoothService> services = await device.discoverServices();
 
       for (BluetoothService service in services) {
-        if (service.uuid.toString().toLowerCase() == ESP_SERVICE_UUID.toLowerCase()) {
+        if (service.uuid.toString().toLowerCase() ==
+            ESP_SERVICE_UUID.toLowerCase()) {
           for (BluetoothCharacteristic c in service.characteristics) {
-            if (c.uuid.toString().toLowerCase() == ESP_CHAR_UUID.toLowerCase()) {
+            if (c.uuid.toString().toLowerCase() ==
+                ESP_CHAR_UUID.toLowerCase()) {
               if (c.properties.notify) {
                 await c.setNotifyValue(true);
 
                 // Cancel old subscription if exists
                 await notificationSubscription?.cancel();
 
-                notificationSubscription = c.lastValueStream.listen((value) async {
-                final notification = String.fromCharCodes(value);
+                notificationSubscription = c.lastValueStream.listen((
+                  value,
+                ) async {
+                  final notification = String.fromCharCodes(value);
 
                 final regex = RegExp(r"PD1:\s*(\d+),\s*PD2:\s*(\d+),\s*PD3:\s*(\d+)");
                 final match = regex.firstMatch(notification);
@@ -158,12 +161,12 @@ StreamSubscription<List<int>>? notificationSubscription;
                     final file = File('${dir.path}/readings.csv');
                     await file.writeAsString(csvLine, mode: FileMode.append);
 
-                    print("Saved: $csvLine");
+                    debugPrint("Saved: $csvLine");
                   } catch (e) {
-                    print("Failed to parse or save data: $e");
+                    debugPrint("Failed to parse or save data: $e");
                   }
                 } else {
-                  print("Failed to match notification: $notification");
+                  debugPrint("Failed to match notification: $notification");
                 }
               });
 
@@ -175,9 +178,8 @@ StreamSubscription<List<int>>? notificationSubscription;
       }
 
       throw Exception("Target service/characteristic not found");
-
     } catch (e) {
-      print("Connection failed: $e");
+      debugPrint("Connection failed: $e");
       rethrow;
     }
   }

@@ -4,7 +4,6 @@ import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sugar_daddy/data/glucose_bluetooth_service.dart';
 
 import 'package:sugar_daddy/data/local_storage.dart';
 import 'package:sugar_daddy/data/notification_service.dart';
@@ -47,7 +46,6 @@ class _DailyGlucoseChartState extends State<DailyGlucoseChart> {
       if (!mounted) return;
       addNewGlucoseReading();
     });
-
   }
 
   @override
