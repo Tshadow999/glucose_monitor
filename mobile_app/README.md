@@ -9,3 +9,9 @@ This data is send to the cloud, where a Machine learning model will output a sin
 - Machine learning model in cloud
 - Unit changer (mmol/L or mg/dL)
 - Light and dark modes
+
+## Usage:
+    if you have an android device attached:
+    flutter run
+    otherwise: 
+    flutter build apk --debug
